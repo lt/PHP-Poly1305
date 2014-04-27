@@ -146,3 +146,13 @@ class Poly1305
         }
     }
 }
+
+if (!function_exists('poly1305_authenticate')) {
+    function poly1305_authenticate($key, $message) {
+        return (new Poly1305)->authenticate($key, $message);
+    }
+
+    function poly1305_verify($authenticator, $key, $message) {
+        return (new Poly1305)->verify($authenticator, $key, $message);
+    }
+}
