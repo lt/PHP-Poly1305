@@ -14,7 +14,7 @@ class Poly1305
             throw new InvalidArgumentException('Message must be a string');
         }
 
-        $this->h = [-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        $this->h = ['C16',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
         $r = unpack('C16', $key);
         $s = unpack('@16/C16', $key);
@@ -90,12 +90,8 @@ class Poly1305
         /* h = (h + pad) % (1 << 128) */
         $this->add($s);
 
-        $authenticator = '';
-        for ($i = 1; $i < 17; $i++) {
-            $authenticator .= chr($this->h[$i]);
-        }
-
-        return $authenticator;
+        unset($this->h[17]);
+        return call_user_func_array('pack', $this->h);
     }
 
     public function verify($authenticator, $key, $message)
@@ -106,8 +102,8 @@ class Poly1305
 
         $authenticator2 = $this->authenticate($key, $message);
 
-        $bytes1 = unpack('C*', $authenticator);
-        $bytes2 = unpack('C*', $authenticator2);
+        $bytes1 = unpack('C16', $authenticator);
+        $bytes2 = unpack('C16', $authenticator2);
 
         $result = 0;
 
