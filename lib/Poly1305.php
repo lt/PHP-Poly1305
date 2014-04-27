@@ -3,7 +3,6 @@
 class Poly1305
 {
     private $h;
-    private $final = 0;
 
     public function authenticate($key, $message)
     {
@@ -15,23 +14,22 @@ class Poly1305
             throw new InvalidArgumentException('Message must be a string');
         }
 
-        $this->h = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        $this->h = [-1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
-        $keyBytes = array_values(unpack('C*', $key));
-        $this->r = array_slice($keyBytes, 0, 16);
-        $s = array_slice($keyBytes, 16);
+        $r = unpack('C16', $key);
+        $s = unpack('@16/C16', $key);
 
         // Clamp
-        $this->r[3] &= 0x0f;
-        $this->r[4] &= 0xfc;
-        $this->r[7] &= 0x0f;
-        $this->r[8] &= 0xfc;
-        $this->r[11] &= 0x0f;
-        $this->r[12] &= 0xfc;
-        $this->r[15] &= 0x0f;
+        $r[4] &= 0x0f;
+        $r[5] &= 0xfc;
+        $r[8] &= 0x0f;
+        $r[9] &= 0xfc;
+        $r[12] &= 0x0f;
+        $r[13] &= 0xfc;
+        $r[16] &= 0x0f;
 
-        $this->r[16] = 0;
-        $s[16] = 0;
+        $r[17] = 0;
+        $s[17] = 0;
 
         $bytesLeft = strlen($message);
         $offset = 0;
@@ -47,35 +45,35 @@ class Poly1305
                 $c = unpack("C17", substr($message, $offset, 16) . "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
             }
 
-            $this->add(array_values($c));
+            $this->add($c);
 
             /* h *= r */
-            for ($i = 0; $i < 17; $i++) {
+            for ($i = 1; $i < 18; $i++) {
                 $u = 0;
-                for ($j = 0; $j <= $i; $j++) {
-                    $u += $this->h[$j] * $this->r[$i - $j];
+                for ($j = 1; $j <= $i; $j++) {
+                    $u += $this->h[$j] * $r[$i + 1 - $j];
                 }
-                for ($j = $i + 1; $j < 17; $j++) {
-                    $u += $this->h[$j] * $this->r[$i + 17 - $j] * 320;
+                for ($j = $i + 1; $j < 18; $j++) {
+                    $u += $this->h[$j] * $r[$i + 18 - $j] * 320;
                 }
                 $hr[$i] = $u;
             }
 
             /* (partial) h %= p */
-            for ($u = 0, $i = 0; $i < 16; $i++, $u >>= 8) {
+            for ($u = 0, $i = 1; $i < 17; $i++, $u >>= 8) {
                 $u += $hr[$i];
                 $this->h[$i] = $u & 0xff;
             }
-            $u += $hr[16];
-            $this->h[16] = $u & 0x03;
+            $u += $hr[17];
+            $this->h[17] = $u & 0x03;
             $u >>= 2;
             $u += ($u << 2); /* u *= 5; */
-            for ($i = 0; $i < 16; $i++) {
+            for ($i = 1; $i < 17; $i++) {
                 $u += $this->h[$i];
                 $this->h[$i] = $u & 0xff;
                 $u >>= 8;
             }
-            $this->h[16] += $u;
+            $this->h[17] += $u;
 
             $offset += 16;
             $bytesLeft -= 16;
@@ -83,17 +81,17 @@ class Poly1305
 
         $horig = $this->h;
         /* compute h + -p */
-        $this->add([5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0xfc]);
+        $this->add([-1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0xfc]);
         /* select h if h < p, or h + -p if h >= p */
-        $negative = -($this->h[16] >> 7);
-        for ($i = 0; $i < 17; $i++) {
+        $negative = -($this->h[17] >> 7);
+        for ($i = 1; $i < 18; $i++) {
             $this->h[$i] ^= $negative & ($horig[$i] ^ $this->h[$i]);
         }
         /* h = (h + pad) % (1 << 128) */
         $this->add($s);
 
         $authenticator = '';
-        for ($i = 0; $i < 16; $i++) {
+        for ($i = 1; $i < 17; $i++) {
             $authenticator .= chr($this->h[$i]);
         }
 
@@ -123,7 +121,7 @@ class Poly1305
 
     public function add(array $c)
     {
-        for ($u = 0, $i = 0; $i < 17; $i++, $u >>= 8) {
+        for ($u = 0, $i = 1; $i < 18; $i++, $u >>= 8) {
             $u += $this->h[$i] + $c[$i];
             $this->h[$i] = $u & 0xff;
         }
