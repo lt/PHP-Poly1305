@@ -33,7 +33,53 @@ class Poly1305
         $this->r[16] = 0;
         $s[16] = 0;
 
-        $this->blocks($message);
+        $bytesLeft = strlen($message);
+        $offset = 0;
+        while ($bytesLeft > 0) {
+            $hr = [];
+
+            /* h += m */
+            if ($bytesLeft >= 16) {
+                $c = unpack("@$offset/C16", $message);
+                $c[17] = 1;
+            }
+            else {
+                $c = unpack("C17", substr($message, $offset, 16) . "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
+            }
+
+            $this->add(array_values($c));
+
+            /* h *= r */
+            for ($i = 0; $i < 17; $i++) {
+                $u = 0;
+                for ($j = 0; $j <= $i; $j++) {
+                    $u += $this->h[$j] * $this->r[$i - $j];
+                }
+                for ($j = $i + 1; $j < 17; $j++) {
+                    $u += $this->h[$j] * $this->r[$i + 17 - $j] * 320;
+                }
+                $hr[$i] = $u;
+            }
+
+            /* (partial) h %= p */
+            for ($u = 0, $i = 0; $i < 16; $i++, $u >>= 8) {
+                $u += $hr[$i];
+                $this->h[$i] = $u & 0xff;
+            }
+            $u += $hr[16];
+            $this->h[16] = $u & 0x03;
+            $u >>= 2;
+            $u += ($u << 2); /* u *= 5; */
+            for ($i = 0; $i < 16; $i++) {
+                $u += $this->h[$i];
+                $this->h[$i] = $u & 0xff;
+                $u >>= 8;
+            }
+            $this->h[16] += $u;
+
+            $offset += 16;
+            $bytesLeft -= 16;
+        }
 
         $horig = $this->h;
         /* compute h + -p */
@@ -73,61 +119,6 @@ class Poly1305
         }
 
         return $result === 0;
-    }
-
-    public function blocks($message)
-    {
-        $bytes = strlen($message);
-        $offset = 0;
-        while ($bytes) {
-            $hr = [];
-
-            /* h += m */
-            $c = array_values(unpack('C*', substr($message, $offset, 16)));
-            if ($bytes < 16) {
-                $c[$bytes] = 1;
-                while (++$bytes < 16) {
-                    $c[$bytes] = 0;
-                }
-                $c[16] = 0;
-            }
-            else {
-                $c[16] = 1;
-            }
-
-            $this->add($c);
-
-            /* h *= r */
-            for ($i = 0; $i < 17; $i++) {
-                $u = 0;
-                for ($j = 0; $j <= $i; $j++) {
-                    $u += $this->h[$j] * $this->r[$i - $j];
-                }
-                for ($j = $i + 1; $j < 17; $j++) {
-                    $u += $this->h[$j] * $this->r[$i + 17 - $j] * 320;
-                }
-                $hr[$i] = $u;
-            }
-
-            /* (partial) h %= p */
-            for ($u = 0, $i = 0; $i < 16; $i++, $u >>= 8) {
-                $u += $hr[$i];
-                $this->h[$i] = $u & 0xff;
-            }
-            $u += $hr[16];
-            $this->h[16] = $u & 0x03;
-            $u >>= 2;
-            $u += ($u << 2); /* u *= 5; */
-            for ($i = 0; $i < 16; $i++) {
-                $u += $this->h[$i];
-                $this->h[$i] = $u & 0xff;
-                $u >>= 8;
-            }
-            $this->h[16] += $u;
-
-            $offset += 16;
-            $bytes -= 16;
-        }
     }
 
     public function add(array $c)
