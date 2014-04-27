@@ -2,6 +2,33 @@
 
 class Poly1305Test extends PHPUnit_Framework_TestCase
 {
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    function testInvalidAuthenticator()
+    {
+        $poly1305 = new Poly1305();
+        $poly1305->verify('123', '01234567890123456789012345678901', '123');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    function testInvalidKey()
+    {
+        $poly1305 = new Poly1305();
+        $poly1305->authenticate('123', '123');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    function testInvalidMessage()
+    {
+        $poly1305 = new Poly1305();
+        $poly1305->authenticate('01234567890123456789012345678901', 123);
+    }
+
     function testNaCL()
     {
         /* example from nacl */
