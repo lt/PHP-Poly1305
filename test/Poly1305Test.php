@@ -90,7 +90,7 @@ class Poly1305Test extends PHPUnit_Framework_TestCase
         for ($i = 0; $i < 256; $i++) {
             $message .= $poly1305->authenticate(
                 str_repeat(chr($i), 32),
-                str_repeat(chr($i), 256)
+                str_repeat(chr($i), $i)
             );
         }
 
