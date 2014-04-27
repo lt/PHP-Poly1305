@@ -33,23 +33,7 @@ class Poly1305
         $this->r[16] = 0;
         $s[16] = 0;
 
-        $bytes = strlen($message);
-        $want = 0;
-        $this->final = 0;
-
-        if ($bytes >= 16) {
-            $want = ($bytes & ~15);
-            $this->blocks($message, $want);
-            $bytes -= $want;
-        }
-
-        /* store leftover */
-        if ($bytes) {
-            $buffer = substr($message, $want, $bytes) . "\1" . str_repeat("\0", 16 - $bytes - 1);
-
-            $this->final = 1;
-            $this->blocks($buffer, 16);
-        }
+        $this->blocks($message);
 
         $horig = $this->h;
         /* compute h + -p */
@@ -91,18 +75,26 @@ class Poly1305
         return $result === 0;
     }
 
-    public function blocks($m, $bytes)
+    public function blocks($message)
     {
-        $hibit = $this->final ^ 1; /* 1 << 128 */
+        $bytes = strlen($message);
         $offset = 0;
-        while ($bytes >= 16) {
+        while ($bytes) {
             $hr = [];
-            $c = [];
 
             /* h += m */
-            for ($i = 0; $i < 16; $i++)
-                $c[$i] = ord($m[$offset + $i]);
-            $c[16] = $hibit;
+            $c = array_values(unpack('C*', substr($message, $offset, 16)));
+            if ($bytes < 16) {
+                $c[$bytes] = 1;
+                while (++$bytes < 16) {
+                    $c[$bytes] = 0;
+                }
+                $c[16] = 0;
+            }
+            else {
+                $c[16] = 1;
+            }
+
             $this->add($c);
 
             /* h *= r */
