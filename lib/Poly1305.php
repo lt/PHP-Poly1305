@@ -42,9 +42,9 @@ class Poly1305
                 $c[17] = 1;
             }
             else {
-                $c = unpack("C17", substr($message, $offset, 16) . "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
+                $c = unpack("@$offset/C*", $message) +
+                    [$bytesLeft + 1 => 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
             }
-
             $this->add($c);
 
             /* h *= r */
@@ -67,13 +67,7 @@ class Poly1305
             $u += $hr[17];
             $this->h[17] = $u & 0x03;
             $u >>= 2;
-            $u += ($u << 2); /* u *= 5; */
-            for ($i = 1; $i < 17; $i++) {
-                $u += $this->h[$i];
-                $this->h[$i] = $u & 0xff;
-                $u >>= 8;
-            }
-            $this->h[17] += $u;
+            $this->add([1 => $u + ($u << 2),0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
 
             $offset += 16;
             $bytesLeft -= 16;
@@ -81,7 +75,7 @@ class Poly1305
 
         $horig = $this->h;
         /* compute h + -p */
-        $this->add([-1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0xfc]);
+        $this->add([1 => 5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0xfc]);
         /* select h if h < p, or h + -p if h >= p */
         $negative = -($this->h[17] >> 7);
         for ($i = 1; $i < 18; $i++) {
