@@ -1,6 +1,6 @@
 <?php
 
-class Poly1305
+class Poly1305Legacy
 {
     private $h;
 
@@ -14,27 +14,18 @@ class Poly1305
             throw new InvalidArgumentException('Message must be a string');
         }
 
-        $this->h = ['C16',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-
-        $r = unpack('C16', $key);
-        $s = unpack('@16/C16', $key);
+        $this->h = array('C16',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 
         // Clamp
-        $r[4] &= 0x0f;
-        $r[5] &= 0xfc;
-        $r[8] &= 0x0f;
-        $r[9] &= 0xfc;
-        $r[12] &= 0x0f;
-        $r[13] &= 0xfc;
-        $r[16] &= 0x0f;
+        $r = unpack('C16', $key & "\xff\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\0");
+        $s = unpack('@16/C16', $key);
 
-        $r[17] = 0;
         $s[17] = 0;
 
         $bytesLeft = strlen($message);
         $offset = 0;
         while ($bytesLeft > 0) {
-            $hr = [];
+            $hr = array();
 
             /* h += m */
             if ($bytesLeft >= 16) {
@@ -43,7 +34,7 @@ class Poly1305
             }
             else {
                 $c = unpack("@$offset/C*", $message) +
-                    [$bytesLeft + 1 => 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+                    array($bytesLeft + 1 => 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
             }
             $this->add($c);
 
@@ -67,7 +58,7 @@ class Poly1305
             $u += $hr[17];
             $this->h[17] = $u & 0x03;
             $u >>= 2;
-            $this->add([1 => $u + ($u << 2),0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
+            $this->add(array(1 => $u + ($u << 2),0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0));
 
             $offset += 16;
             $bytesLeft -= 16;
@@ -75,7 +66,7 @@ class Poly1305
 
         $horig = $this->h;
         /* compute h + -p */
-        $this->add([1 => 5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0xfc]);
+        $this->add(array(1 => 5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0xfc));
         /* select h if h < p, or h + -p if h >= p */
         $negative = -($this->h[17] >> 7);
         for ($i = 1; $i < 18; $i++) {
@@ -109,21 +100,11 @@ class Poly1305
         return $result === 0;
     }
 
-    public function add(array $c)
+    private function add(array $c)
     {
         for ($u = 0, $i = 1; $i < 18; $i++, $u >>= 8) {
             $u += $this->h[$i] + $c[$i];
             $this->h[$i] = $u & 0xff;
         }
-    }
-}
-
-if (!function_exists('poly1305_authenticate')) {
-    function poly1305_authenticate($key, $message) {
-        return (new Poly1305)->authenticate($key, $message);
-    }
-
-    function poly1305_verify($authenticator, $key, $message) {
-        return (new Poly1305)->verify($authenticator, $key, $message);
     }
 }
