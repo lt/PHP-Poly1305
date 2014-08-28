@@ -57,12 +57,35 @@ class Poly1305GMP
 
     private function import($bin)
     {
-        $c = unpack('C*', $bin);
+        $binLen = strlen($bin);
 
-        $i = count($c);
-        $ret = gmp_init($c[$i--]);
-        while ($i) {
-            $ret = ($ret << 8) | $c[$i--];
+        // r, s and all except one message block (maybe) will be 16 bytes
+        if ($binLen === 16) {
+            $w = unpack('v8', $bin);
+            // looks mad but it propagates the GMP object downwards
+            return (((((((((((((
+                gmp_init($w[8]) << 16) |
+                        $w[7]) << 16) |
+                        $w[6]) << 16) |
+                        $w[5]) << 16) |
+                        $w[4]) << 16) |
+                        $w[3]) << 16) |
+                        $w[2]) << 16) |
+                        $w[1];
+        }
+
+        $words = $binLen >> 1;
+        $w = unpack("v$words", $bin);
+
+        if ($binLen & 1) {
+            $ret = gmp_init(ord($bin[$words ^ 1]));
+        }
+        else {
+            $ret = gmp_init($w[$words--]);
+        }
+
+        while ($words) {
+            $ret = ($ret << 16) | $w[$words--];
         }
 
         return $ret;
