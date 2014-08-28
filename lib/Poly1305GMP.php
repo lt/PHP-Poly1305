@@ -1,5 +1,61 @@
 <?php
 
+if (PHP_INT_SIZE > 4) {
+    function poly1305_gmp_import($bin)
+    {
+        // r, s and all except one message block (maybe) will be 16 bytes
+        if (strlen($bin) < 16) {
+            $bin = str_pad($bin, 16, "\0", STR_PAD_RIGHT);
+        }
+
+        $w = unpack('V4', $bin);
+
+        // looks a littlemad but it propagates the GMP object downwards
+        return (((((
+            gmp_init($w[4]) << 32) |
+                     $w[3]) << 32) |
+                     $w[2]) << 32) |
+                     $w[1];
+    }
+}
+else {
+    function poly1305_gmp_import($bin)
+    {
+        $binLen = strlen($bin);
+
+        // r, s and all except one message block (maybe) will be 16 bytes
+        if ($binLen === 16) {
+            $w = unpack('v8', $bin);
+            // looks mad but it propagates the GMP object downwards
+            return (((((((((((((
+                gmp_init($w[8]) << 16) |
+                         $w[7]) << 16) |
+                         $w[6]) << 16) |
+                         $w[5]) << 16) |
+                         $w[4]) << 16) |
+                         $w[3]) << 16) |
+                         $w[2]) << 16) |
+                         $w[1];
+        }
+
+        $words = $binLen >> 1;
+        $w = unpack("v$words", $bin);
+
+        if ($binLen & 1) {
+            $ret = gmp_init(ord($bin[$binLen ^ 1]));
+        }
+        else {
+            $ret = gmp_init($w[$words--]);
+        }
+
+        while ($words) {
+            $ret = ($ret << 16) | $w[$words--];
+        }
+
+        return $ret;
+    }
+}
+
 class Poly1305GMP
 {
     public function authenticate($key, $message)
@@ -12,8 +68,8 @@ class Poly1305GMP
             throw new InvalidArgumentException('Message must be a string');
         }
 
-        $r = $this->import($key & "\xff\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f");
-        $s = $this->import(substr($key, 16));
+        $r = poly1305_gmp_import($key & "\xff\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f");
+        $s = poly1305_gmp_import(substr($key, 16));
 
         $h = gmp_init('0');
         $p = gmp_init('3fffffffffffffffffffffffffffffffb', 16);
@@ -29,7 +85,7 @@ class Poly1305GMP
                 $j = 16;
             }
 
-            $c = $this->import(substr($message, $offset, $j));
+            $c = poly1305_gmp_import(substr($message, $offset, $j));
             $h = gmp_div_r(($c + $h + (gmp_init('1') << ($j << 3))) * $r, $p);
 
             $offset += $j;
@@ -53,41 +109,5 @@ class Poly1305GMP
         }
 
         return hash_equals($authenticator, $this->authenticate($key, $message));
-    }
-
-    private function import($bin)
-    {
-        $binLen = strlen($bin);
-
-        // r, s and all except one message block (maybe) will be 16 bytes
-        if ($binLen === 16) {
-            $w = unpack('v8', $bin);
-            // looks mad but it propagates the GMP object downwards
-            return (((((((((((((
-                gmp_init($w[8]) << 16) |
-                        $w[7]) << 16) |
-                        $w[6]) << 16) |
-                        $w[5]) << 16) |
-                        $w[4]) << 16) |
-                        $w[3]) << 16) |
-                        $w[2]) << 16) |
-                        $w[1];
-        }
-
-        $words = $binLen >> 1;
-        $w = unpack("v$words", $bin);
-
-        if ($binLen & 1) {
-            $ret = gmp_init(ord($bin[$binLen ^ 1]));
-        }
-        else {
-            $ret = gmp_init($w[$words--]);
-        }
-
-        while ($words) {
-            $ret = ($ret << 16) | $w[$words--];
-        }
-
-        return $ret;
     }
 }
