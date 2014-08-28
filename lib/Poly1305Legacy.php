@@ -17,7 +17,7 @@ class Poly1305Legacy
         $this->h = array('C16',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 
         // Clamp
-        $r = unpack('C16', $key & "\xff\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\0");
+        $r = unpack('C17', $key & "\xff\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\0");
         $s = unpack('@16/C16', $key);
 
         $s[17] = 0;
