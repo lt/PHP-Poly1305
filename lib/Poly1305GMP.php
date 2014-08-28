@@ -78,7 +78,7 @@ class Poly1305GMP
         $w = unpack("v$words", $bin);
 
         if ($binLen & 1) {
-            $ret = gmp_init(ord($bin[$words ^ 1]));
+            $ret = gmp_init(ord($bin[$binLen ^ 1]));
         }
         else {
             $ret = gmp_init($w[$words--]);
