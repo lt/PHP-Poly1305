@@ -18,14 +18,14 @@ else {
         if (extension_loaded('gmp')) {
             require 'Poly1305GMP.php';
             class Poly1305 extends Poly1305GMP {}
-        }
+        }/*
         elseif (extension_loaded('bcmath')) {
             require 'Poly1305BCMath.php';
             class Poly1305 extends Poly1305BCMath {}
-        }
+        }*/
         else {
             require 'Poly1305Native.php';
-            class Poly1305 extends Poly1305BCMath {}
+            class Poly1305 extends Poly1305Native {}
         }
     }
     else {
