@@ -1,36 +1,23 @@
 <?php
 
 if (extension_loaded('poly1305')) {
-    class Poly1305 {
-        function authenticate($key, $message)
-        {
-            return poly1305_authenticate($key, $message);
-        }
-
-        function verify($authenticator, $key, $message)
-        {
-            return poly1305_verify($authenticator, $key, $message);
-        }
-    }
+    // TODO: Fix extension
 }
 else {
-    if (PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
-        if (extension_loaded('gmp')) {
-            require 'Poly1305GMP.php';
-            class Poly1305 extends Poly1305GMP {}
-        }/*
-        elseif (extension_loaded('bcmath')) {
-            require 'Poly1305BCMath.php';
-            class Poly1305 extends Poly1305BCMath {}
-        }*/
-        else {
-            require 'Poly1305Native.php';
-            class Poly1305 extends Poly1305Native {}
-        }
+    if (extension_loaded('gmp') && PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
+        require 'Poly1305GMP.php';
+        class Poly1305 extends Poly1305\GMP {}
+        class Poly1305Context extends Poly1305\ContextGMP {}
+    }
+    elseif (PHP_INT_SIZE > 4 && PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
+        require 'Poly1305Native.php';
+        class Poly1305 extends Poly1305\Native {}
+        class Poly1305Context extends Poly1305\ContextNative {}
     }
     else {
         require 'Poly1305Legacy.php';
-        class Poly1305 extends Poly1305Legacy {}
+        class Poly1305 extends Poly1305\Legacy {}
+        class Poly1305Context extends Poly1305\ContextLegacy {}
     }
 
     function poly1305_authenticate($key, $message) {
