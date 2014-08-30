@@ -149,7 +149,7 @@ class GMP
             list($ctx->h, $out[$j]) = gmp_div_qr($ctx->h, 256);
         }
 
-        $ctx->r = $ctx->s = $ctx->h = $ctx->buffer = null;
+        $ctx = new ContextGMP();
 
         return pack('C16', ...$out);
     }

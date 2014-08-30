@@ -1,98 +1,232 @@
 <?php
 
-class Poly1305Native
+namespace Poly1305;
+
+class ContextNative
 {
-    private $h;
+    public $r;
+    public $s;
+    public $h;
+    public $buffer;
+}
+
+class Native
+{
+    function init(ContextNative $ctx, $key)
+    {
+        if (!is_string($key) || strlen($key) !== 32) {
+            throw new \InvalidArgumentException('Key must be a 32 byte string');
+        }
+
+        $words = unpack('v8', $key);
+        $ctx->r = array(
+            ( $words[1] | ($words[2] << 16)) & 0x3ffffff,
+            (($words[2] >> 10) | ($words[3] << 6) | ($words[4] << 22)) & 0x3ffff03,
+            (($words[4] >> 4) | ($words[5] << 12)) & 0x3ffc0ff,
+            (($words[5] >> 14) | ($words[6] << 2) | ($words[7] << 18)) & 0x3f03fff,
+            (($words[7] >> 8) | ($words[8] << 8)) & 0x00fffff,
+        );
+
+        $words = unpack('@16/v8', $key);
+        $ctx->s = array(
+            ( $words[1] | ($words[2] << 16)) & 0x3ffffff,
+            (($words[2] >> 10) | ($words[3] << 6) | ($words[4] << 22)) & 0x3ffffff,
+            (($words[4] >> 4) | ($words[5] << 12)) & 0x3ffffff,
+            (($words[5] >> 14) | ($words[6] << 2) | ($words[7] << 18)) & 0x3ffffff,
+            (($words[7] >> 8) | ($words[8] << 8)) & 0x0ffffff,
+        );
+
+        $ctx->h = array(0, 0, 0, 0, 0);
+
+        $ctx->buffer = '';
+    }
+
+    function blocks(ContextNative $ctx, $message, $hibit = 1)
+    {
+        if (!is_string($message)) {
+            throw new \InvalidArgumentException('Message must be a string');
+        }
+
+        if ($ctx->buffer) {
+            $offset = 16 - strlen($ctx->buffer);
+            $tmp = $ctx->buffer . substr($message, 0, $offset);
+            $ctx->buffer = '';
+            $this->blocks($ctx, $tmp, $hibit);
+        }
+        else {
+            $offset = 0;
+        }
+
+        $hibit <<= 24;
+
+        list ($r0, $r1, $r2, $r3, $r4) = $ctx->r;
+
+        $s1 = ($r1 << 2) + $r1;
+        $s2 = ($r2 << 2) + $r2;
+        $s3 = ($r3 << 2) + $r3;
+        $s4 = ($r4 << 2) + $r4;
+
+        list ($h0, $h1, $h2, $h3, $h4) = $ctx->h;
+
+        $msgLen = strlen($message);
+        $blocks = $msgLen >> 4;
+
+        while ($blocks--) {
+            $words = unpack("@$offset/v8", $message);
+            $h0 += ( $words[1] | ($words[2] << 16)) & 0x3ffffff;
+            $h1 += (($words[2] >> 10) | ($words[3] << 6) | ($words[4] << 22)) & 0x3ffffff;
+            $h2 += (($words[4] >> 4) | ($words[5] << 12)) & 0x3ffffff;
+            $h3 += (($words[5] >> 14) | ($words[6] << 2) | ($words[7] << 18)) & 0x3ffffff;
+            $h4 += (($words[7] >> 8) | ($words[8] << 8)) | $hibit;
+
+            $d0 = ($h0 * $r0) + ($h1 * $s4) + ($h2 * $s3) + ($h3 * $s2) + ($h4 * $s1);
+            $d1 = ($h0 * $r1) + ($h1 * $r0) + ($h2 * $s4) + ($h3 * $s3) + ($h4 * $s2);
+            $d2 = ($h0 * $r2) + ($h1 * $r1) + ($h2 * $r0) + ($h3 * $s4) + ($h4 * $s3);
+            $d3 = ($h0 * $r3) + ($h1 * $r2) + ($h2 * $r1) + ($h3 * $r0) + ($h4 * $s4);
+            $d4 = ($h0 * $r4) + ($h1 * $r3) + ($h2 * $r2) + ($h3 * $r1) + ($h4 * $r0);
+
+            $c = $d0 >> 26;
+            $h0 = $d0 & 0x3ffffff;
+
+            $d1 += $c;
+            $c = $d1 >> 26;
+            $h1 = $d1 & 0x3ffffff;
+
+            $d2 += $c;
+            $c = $d2 >> 26;
+            $h2 = $d2 & 0x3ffffff;
+
+            $d3 += $c;
+            $c = $d3 >> 26;
+            $h3 = $d3 & 0x3ffffff;
+
+            $d4 += $c;
+            $c = $d4 >> 26;
+            $h4 = $d4 & 0x3ffffff;
+
+            $h0 += ($c << 2) + $c;
+            $c = $h0 >> 26;
+            $h0 &= 0x3ffffff;
+
+            $h1 += $c;
+
+            $offset += 16;
+        }
+
+        $ctx->h = array($h0, $h1, $h2, $h3, $h4);
+
+        if ($offset < $msgLen) {
+            $ctx->buffer = substr($message, $offset);
+        }
+    }
+
+    function finish(ContextNative $ctx)
+    {
+        if ($ctx->buffer) {
+            $this->blocks($ctx, "\1" . str_repeat("\0", 15 - strlen($ctx->buffer)), 0);
+        }
+
+        list ($h0, $h1, $h2, $h3, $h4) = $ctx->h;
+
+        $c = $h1 >> 26;
+        $h1 &= 0x3ffffff;
+
+        $h2 += $c;
+        $c = $h2 >> 26;
+        $h2 &= 0x3ffffff;
+
+        $h3 += $c;
+        $c = $h3 >> 26;
+        $h3 &= 0x3ffffff;
+
+        $h4 += $c;
+        $c = $h4 >> 26;
+        $h4 &= 0x3ffffff;
+
+        $h0 += ($c << 2) + $c;
+        $c = $h0 >> 26;
+        $h0 &= 0x3ffffff;
+
+        $h1 += $c;
+
+        $g0 = $h0 + 5;
+        $c = $g0 >> 26;
+        $g0 &= 0x3ffffff;
+
+        $g1 = $h1 + $c;
+        $c = $g1 >> 26;
+        $g1 &= 0x3ffffff;
+
+        $g2 = $h2 + $c;
+        $c = $g2 >> 26;
+        $g2 &= 0x3ffffff;
+
+        $g3 = $h3 + $c;
+        $c = $g3 >> 26;
+        $g3 &= 0x3ffffff;
+
+        $g4 = ($h4 + $c - (1 << 26)) & 0xffffffff;
+
+        $mask = ($g4 >> 31) - 1;
+        $g0 &= $mask;
+        $g1 &= $mask;
+        $g2 &= $mask;
+        $g3 &= $mask;
+        $g4 &= $mask;
+        $mask = ~$mask & 0xffffffff;
+        $h0 = ($h0 & $mask) | $g0;
+        $h1 = ($h1 & $mask) | $g1;
+        $h2 = ($h2 & $mask) | $g2;
+        $h3 = ($h3 & $mask) | $g3;
+        $h4 = ($h4 & $mask) | $g4;
+
+        list ($s0, $s1, $s2, $s3, $s4) = $ctx->s;
+
+        $c = $h0 + $s0;
+        $h0 = $c & 0x3ffffff;
+
+        $c = $h1 + $s1 + ($c >> 26);
+        $h1 = $c & 0x3ffffff;
+
+        $c = $h2 + $s2 + ($c >> 26);
+        $h2 = $c & 0x3ffffff;
+
+        $c = $h3 + $s3 + ($c >> 26);
+        $h3 = $c & 0x3ffffff;
+
+        $c = $h4 + $s4 + ($c >> 26);
+        $h4 = $c & 0x0ffffff;
+
+        $mac = pack('v8',
+            $h0 & 0xffff,
+            (($h0 >> 16) | ($h1 << 10)) & 0xffff,
+            ($h1 >>  6) & 0xffff,
+            (($h1 >> 22) | ($h2 << 4)) & 0xffff,
+            (($h2 >> 12) | ($h3 << 14)) & 0xffff,
+            ($h3 >> 2) & 0xffff,
+            (($h3 >> 18) | ($h4 << 8)) & 0xffff,
+            ($h4 >> 8) & 0xffff
+        );
+
+        $ctx = new ContextNative();
+
+        return $mac;
+    }
 
     public function authenticate($key, $message)
     {
-        if (!is_string($key) || strlen($key) !== 32) {
-            throw new InvalidArgumentException('Key must be a 32 byte string');
-        }
-
-        if (!is_string($message)) {
-            throw new InvalidArgumentException('Message must be a string');
-        }
-
-        $this->h = [1 => 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-
-        // Clamp
-        $r = unpack('C17', $key & "\xff\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\0");
-        $s = unpack('@16/C16', $key);
-
-        $s[17] = 0;
-
-        $bytesLeft = strlen($message);
-        $offset = 0;
-        while ($bytesLeft > 0) {
-            $hr = array();
-
-            /* h += m */
-            if ($bytesLeft >= 16) {
-                $c = unpack("@$offset/C16", $message);
-                $c[17] = 1;
-            }
-            else {
-                $c = unpack("@$offset/C*", $message) +
-                    [$bytesLeft + 1 => 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-            }
-            $this->add($c);
-
-            /* h *= r */
-            for ($i = 1; $i < 18; $i++) {
-                $u = 0;
-                for ($j = 1; $j <= $i; $j++) {
-                    $u += $this->h[$j] * $r[$i + 1 - $j];
-                }
-                for ($j = $i + 1; $j < 18; $j++) {
-                    $u += $this->h[$j] * $r[$i + 18 - $j] * 320;
-                }
-                $hr[$i] = $u;
-            }
-
-            /* (partial) h %= p */
-            for ($u = 0, $i = 1; $i < 17; $i++, $u >>= 8) {
-                $u += $hr[$i];
-                $this->h[$i] = $u & 0xff;
-            }
-            $u += $hr[17];
-            $this->h[17] = $u & 0x03;
-            $u >>= 2;
-            $this->add([1 => $u + ($u << 2),0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
-
-            $offset += 16;
-            $bytesLeft -= 16;
-        }
-
-        $horig = $this->h;
-        /* compute h + -p */
-        $this->add([1 => 5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0xfc]);
-        /* select h if h < p, or h + -p if h >= p */
-        $negative = -($this->h[17] >> 7);
-        for ($i = 1; $i < 18; $i++) {
-            $this->h[$i] ^= $negative & ($horig[$i] ^ $this->h[$i]);
-        }
-        /* h = (h + pad) % (1 << 128) */
-        $this->add($s);
-
-        unset($this->h[17]);
-        return pack('C16', ...$this->h);
+        $ctx = new ContextNative();
+        $this->init($ctx, $key);
+        $this->blocks($ctx, $message);
+        return $this->finish($ctx);
     }
 
     public function verify($authenticator, $key, $message)
     {
         if (!is_string($authenticator) || strlen($authenticator) !== 16) {
-            throw new InvalidArgumentException('Authenticator must be a 16 byte string');
+            throw new \InvalidArgumentException('Authenticator must be a 16 byte string');
         }
 
         return hash_equals($authenticator, $this->authenticate($key, $message));
-    }
-
-    private function add(array $c)
-    {
-        for ($u = 0, $i = 1; $i < 18; $i++, $u >>= 8) {
-            $u += $this->h[$i] + $c[$i];
-            $this->h[$i] = $u & 0xff;
-        }
     }
 }
