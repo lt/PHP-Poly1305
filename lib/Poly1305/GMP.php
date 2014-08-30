@@ -2,14 +2,6 @@
 
 namespace Poly1305;
 
-class ContextGMP
-{
-    public $r;
-    public $s;
-    public $h;
-    public $buffer;
-}
-
 class GMP
 {
     private $p;
@@ -21,7 +13,7 @@ class GMP
         $this->p = gmp_init('3fffffffffffffffffffffffffffffffb', 16);
     }
 
-    function init(ContextGMP $ctx, $key)
+    function init(Context $ctx, $key)
     {
         if (!is_string($key) || strlen($key) !== 32) {
             throw new \InvalidArgumentException('Key must be a 32 byte string');
@@ -31,11 +23,12 @@ class GMP
         $ctx->s = gmp_init(bin2hex(strrev(substr($key, 16))), 16);
         $ctx->h = gmp_init('0');
         $ctx->buffer = '';
+        $ctx->type = __CLASS__;
     }
 
-    function blocks(ContextGMP $ctx, $message)
+    function blocks(Context $ctx, $message)
     {
-        if (!($ctx->h instanceof \GMP)) {
+        if ($ctx->type !== __CLASS__) {
             throw new \InvalidArgumentException('Context not initialised');
         }
 
@@ -75,9 +68,9 @@ class GMP
         }
     }
 
-    function finish(ContextGMP $ctx)
+    function finish(Context $ctx)
     {
-        if (!($ctx->h instanceof \GMP)) {
+        if ($ctx->type !== __CLASS__) {
             throw new \InvalidArgumentException('Context not initialised');
         }
 
@@ -93,14 +86,14 @@ class GMP
             list($ctx->h, $out[$j]) = gmp_div_qr($ctx->h, 256);
         }
 
-        $ctx = new ContextGMP();
+        $ctx = new Context();
 
         return pack('C16', ...$out);
     }
 
     public function authenticate($key, $message)
     {
-        $ctx = new ContextGMP();
+        $ctx = new Context();
         $this->init($ctx, $key);
         $this->blocks($ctx, $message);
         return $this->finish($ctx);

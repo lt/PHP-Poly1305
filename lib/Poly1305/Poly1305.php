@@ -1,23 +1,19 @@
 <?php
 
+namespace Poly1305;
+
 if (extension_loaded('poly1305')) {
     // TODO: Fix extension
 }
 else {
     if (extension_loaded('gmp') && PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
-        require 'Poly1305GMP.php';
-        class Poly1305 extends Poly1305\GMP {}
-        class Poly1305Context extends Poly1305\ContextGMP {}
+        class Poly1305 extends GMP {}
     }
-    elseif (PHP_INT_SIZE > 4 && PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
-        require 'Poly1305Native.php';
-        class Poly1305 extends Poly1305\Native {}
-        class Poly1305Context extends Poly1305\ContextNative {}
+    elseif (PHP_INT_SIZE > 4) {
+        class Poly1305 extends Native64 {}
     }
     else {
-        require 'Poly1305Legacy.php';
-        class Poly1305 extends Poly1305\Legacy {}
-        class Poly1305Context extends Poly1305\ContextLegacy {}
+        class Poly1305 extends Native32 {}
     }
 
     function poly1305_authenticate($key, $message) {

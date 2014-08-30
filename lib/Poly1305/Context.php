@@ -8,4 +8,5 @@ class Context
     public $s;
     public $h;
     public $buffer;
+    public $type;
 } 

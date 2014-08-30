@@ -2,17 +2,9 @@
 
 namespace Poly1305;
 
-class ContextNative
+class Native64
 {
-    public $r;
-    public $s;
-    public $h;
-    public $buffer;
-}
-
-class Native
-{
-    function init(ContextNative $ctx, $key)
+    function init(Context $ctx, $key)
     {
         if (!is_string($key) || strlen($key) !== 32) {
             throw new \InvalidArgumentException('Key must be a 32 byte string');
@@ -37,13 +29,13 @@ class Native
         ];
 
         $ctx->h = [0, 0, 0, 0, 0];
-
         $ctx->buffer = '';
+        $ctx->type = __CLASS__;
     }
 
-    function blocks(ContextNative $ctx, $message, $hibit = 1)
+    function blocks(Context $ctx, $message, $hibit = 1)
     {
-        if (!is_array($ctx->h)) {
+        if ($ctx->type !== __CLASS__) {
             throw new \InvalidArgumentException('Context not initialised');
         }
 
@@ -104,9 +96,9 @@ class Native
         }
     }
 
-    function finish(ContextNative $ctx)
+    function finish(Context $ctx)
     {
-        if (!is_array($ctx->h)) {
+        if ($ctx->type !== __CLASS__) {
             throw new \InvalidArgumentException('Context not initialised');
         }
 
@@ -161,14 +153,14 @@ class Native
             ( $h4 >>  8)                & 0xffff
         );
 
-        $ctx = new ContextNative();
+        $ctx = new Context();
 
         return $mac;
     }
 
     public function authenticate($key, $message)
     {
-        $ctx = new ContextNative();
+        $ctx = new Context();
         $this->init($ctx, $key);
         $this->blocks($ctx, $message);
         return $this->finish($ctx);

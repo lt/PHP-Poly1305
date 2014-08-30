@@ -1,17 +1,19 @@
 <?php
 
-class Poly1305Legacy
+namespace Poly1305;
+
+class Native32
 {
     private $h;
 
     public function authenticate($key, $message)
     {
         if (!is_string($key) || strlen($key) !== 32) {
-            throw new InvalidArgumentException('Key must be a 32 byte string');
+            throw new \InvalidArgumentException('Key must be a 32 byte string');
         }
 
         if (!is_string($message)) {
-            throw new InvalidArgumentException('Message must be a string');
+            throw new \InvalidArgumentException('Message must be a string');
         }
 
         $this->h = array('C16',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
@@ -82,7 +84,7 @@ class Poly1305Legacy
     public function verify($authenticator, $key, $message)
     {
         if (!is_string($authenticator) || strlen($authenticator) !== 16) {
-            throw new InvalidArgumentException('Authenticator must be a 16 byte string');
+            throw new \InvalidArgumentException('Authenticator must be a 16 byte string');
         }
 
         $authenticator2 = $this->authenticate($key, $message);
