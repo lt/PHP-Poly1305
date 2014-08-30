@@ -20,20 +20,20 @@ class Native
 
         $words = unpack('v8', $key);
         $ctx->r = array(
-            ( $words[1] | ($words[2] << 16)) & 0x3ffffff,
-            (($words[2] >> 10) | ($words[3] << 6) | ($words[4] << 22)) & 0x3ffff03,
-            (($words[4] >> 4) | ($words[5] << 12)) & 0x3ffc0ff,
-            (($words[5] >> 14) | ($words[6] << 2) | ($words[7] << 18)) & 0x3f03fff,
-            (($words[7] >> 8) | ($words[8] << 8)) & 0x00fffff,
+            ( $words[1]        | ($words[2] << 16))                     & 0x3ffffff,
+            (($words[2] >> 10) | ($words[3] <<  6) | ($words[4] << 22)) & 0x3ffff03,
+            (($words[4] >>  4) | ($words[5] << 12))                     & 0x3ffc0ff,
+            (($words[5] >> 14) | ($words[6] <<  2) | ($words[7] << 18)) & 0x3f03fff,
+            (($words[7] >>  8) | ($words[8] <<  8))                     & 0x00fffff,
         );
 
         $words = unpack('@16/v8', $key);
         $ctx->s = array(
-            ( $words[1] | ($words[2] << 16)) & 0x3ffffff,
-            (($words[2] >> 10) | ($words[3] << 6) | ($words[4] << 22)) & 0x3ffffff,
-            (($words[4] >> 4) | ($words[5] << 12)) & 0x3ffffff,
-            (($words[5] >> 14) | ($words[6] << 2) | ($words[7] << 18)) & 0x3ffffff,
-            (($words[7] >> 8) | ($words[8] << 8)) & 0x0ffffff,
+            ( $words[1]        | ($words[2] << 16))                     & 0x3ffffff,
+            (($words[2] >> 10) | ($words[3] <<  6) | ($words[4] << 22)) & 0x3ffffff,
+            (($words[4] >>  4) | ($words[5] << 12))                     & 0x3ffffff,
+            (($words[5] >> 14) | ($words[6] <<  2) | ($words[7] << 18)) & 0x3ffffff,
+            (($words[7] >>  8) | ($words[8] <<  8))                     & 0x0ffffff,
         );
 
         $ctx->h = array(0, 0, 0, 0, 0);
@@ -43,28 +43,29 @@ class Native
 
     function blocks(ContextNative $ctx, $message, $hibit = 1)
     {
+        if (!is_array($ctx->h)) {
+            throw new \InvalidArgumentException('Context not initialised');
+        }
+
         if (!is_string($message)) {
             throw new \InvalidArgumentException('Message must be a string');
         }
 
         if ($ctx->buffer) {
-            $offset = 16 - strlen($ctx->buffer);
-            $tmp = $ctx->buffer . substr($message, 0, $offset);
+            $message = $ctx->buffer . $message;
             $ctx->buffer = '';
-            $this->blocks($ctx, $tmp, $hibit);
         }
-        else {
-            $offset = 0;
-        }
+
+        $offset = 0;
 
         $hibit <<= 24;
 
         list ($r0, $r1, $r2, $r3, $r4) = $ctx->r;
 
-        $s1 = ($r1 << 2) + $r1;
-        $s2 = ($r2 << 2) + $r2;
-        $s3 = ($r3 << 2) + $r3;
-        $s4 = ($r4 << 2) + $r4;
+        $s1 = 5 * $r1;
+        $s2 = 5 * $r2;
+        $s3 = 5 * $r3;
+        $s4 = 5 * $r4;
 
         list ($h0, $h1, $h2, $h3, $h4) = $ctx->h;
 
@@ -73,41 +74,24 @@ class Native
 
         while ($blocks--) {
             $words = unpack("@$offset/v8", $message);
-            $h0 += ( $words[1] | ($words[2] << 16)) & 0x3ffffff;
-            $h1 += (($words[2] >> 10) | ($words[3] << 6) | ($words[4] << 22)) & 0x3ffffff;
-            $h2 += (($words[4] >> 4) | ($words[5] << 12)) & 0x3ffffff;
-            $h3 += (($words[5] >> 14) | ($words[6] << 2) | ($words[7] << 18)) & 0x3ffffff;
-            $h4 += (($words[7] >> 8) | ($words[8] << 8)) | $hibit;
+            $h0 += ( $words[1]        | ($words[2] << 16))                     & 0x3ffffff;
+            $h1 += (($words[2] >> 10) | ($words[3] <<  6) | ($words[4] << 22)) & 0x3ffffff;
+            $h2 += (($words[4] >>  4) | ($words[5] << 12))                     & 0x3ffffff;
+            $h3 += (($words[5] >> 14) | ($words[6] <<  2) | ($words[7] << 18)) & 0x3ffffff;
+            $h4 += (($words[7] >>  8) | ($words[8] <<  8))                     | $hibit;
 
-            $d0 = ($h0 * $r0) + ($h1 * $s4) + ($h2 * $s3) + ($h3 * $s2) + ($h4 * $s1);
-            $d1 = ($h0 * $r1) + ($h1 * $r0) + ($h2 * $s4) + ($h3 * $s3) + ($h4 * $s2);
-            $d2 = ($h0 * $r2) + ($h1 * $r1) + ($h2 * $r0) + ($h3 * $s4) + ($h4 * $s3);
-            $d3 = ($h0 * $r3) + ($h1 * $r2) + ($h2 * $r1) + ($h3 * $r0) + ($h4 * $s4);
-            $d4 = ($h0 * $r4) + ($h1 * $r3) + ($h2 * $r2) + ($h3 * $r1) + ($h4 * $r0);
+            $hr0 = ($h0 * $r0) + ($h1 * $s4) + ($h2 * $s3) + ($h3 * $s2) + ($h4 * $s1);
+            $hr1 = ($h0 * $r1) + ($h1 * $r0) + ($h2 * $s4) + ($h3 * $s3) + ($h4 * $s2);
+            $hr2 = ($h0 * $r2) + ($h1 * $r1) + ($h2 * $r0) + ($h3 * $s4) + ($h4 * $s3);
+            $hr3 = ($h0 * $r3) + ($h1 * $r2) + ($h2 * $r1) + ($h3 * $r0) + ($h4 * $s4);
+            $hr4 = ($h0 * $r4) + ($h1 * $r3) + ($h2 * $r2) + ($h3 * $r1) + ($h4 * $r0);
 
-            $c = $d0 >> 26;
-            $h0 = $d0 & 0x3ffffff;
-
-            $d1 += $c;
-            $c = $d1 >> 26;
-            $h1 = $d1 & 0x3ffffff;
-
-            $d2 += $c;
-            $c = $d2 >> 26;
-            $h2 = $d2 & 0x3ffffff;
-
-            $d3 += $c;
-            $c = $d3 >> 26;
-            $h3 = $d3 & 0x3ffffff;
-
-            $d4 += $c;
-            $c = $d4 >> 26;
-            $h4 = $d4 & 0x3ffffff;
-
-            $h0 += ($c << 2) + $c;
-            $c = $h0 >> 26;
-            $h0 &= 0x3ffffff;
-
+                        $c = $hr0 >> 26; $h0 = $hr0 & 0x3ffffff;
+            $hr1 += $c; $c = $hr1 >> 26; $h1 = $hr1 & 0x3ffffff;
+            $hr2 += $c; $c = $hr2 >> 26; $h2 = $hr2 & 0x3ffffff;
+            $hr3 += $c; $c = $hr3 >> 26; $h3 = $hr3 & 0x3ffffff;
+            $hr4 += $c; $c = $hr4 >> 26; $h4 = $hr4 & 0x3ffffff;
+            $h0 += 5 * $c; $c = $h0 >> 26; $h0 &= 0x3ffffff;
             $h1 += $c;
 
             $offset += 16;
@@ -122,49 +106,27 @@ class Native
 
     function finish(ContextNative $ctx)
     {
+        if (!is_array($ctx->h)) {
+            throw new \InvalidArgumentException('Context not initialised');
+        }
+
         if ($ctx->buffer) {
             $this->blocks($ctx, "\1" . str_repeat("\0", 15 - strlen($ctx->buffer)), 0);
         }
 
         list ($h0, $h1, $h2, $h3, $h4) = $ctx->h;
 
-        $c = $h1 >> 26;
-        $h1 &= 0x3ffffff;
-
-        $h2 += $c;
-        $c = $h2 >> 26;
-        $h2 &= 0x3ffffff;
-
-        $h3 += $c;
-        $c = $h3 >> 26;
-        $h3 &= 0x3ffffff;
-
-        $h4 += $c;
-        $c = $h4 >> 26;
-        $h4 &= 0x3ffffff;
-
-        $h0 += ($c << 2) + $c;
-        $c = $h0 >> 26;
-        $h0 &= 0x3ffffff;
-
+                   $c = $h1 >> 26; $h1 &= 0x3ffffff;
+        $h2 += $c; $c = $h2 >> 26; $h2 &= 0x3ffffff;
+        $h3 += $c; $c = $h3 >> 26; $h3 &= 0x3ffffff;
+        $h4 += $c; $c = $h4 >> 26; $h4 &= 0x3ffffff;
+        $h0 += 5 * $c; $c = $h0 >> 26; $h0 &= 0x3ffffff;
         $h1 += $c;
 
-        $g0 = $h0 + 5;
-        $c = $g0 >> 26;
-        $g0 &= 0x3ffffff;
-
-        $g1 = $h1 + $c;
-        $c = $g1 >> 26;
-        $g1 &= 0x3ffffff;
-
-        $g2 = $h2 + $c;
-        $c = $g2 >> 26;
-        $g2 &= 0x3ffffff;
-
-        $g3 = $h3 + $c;
-        $c = $g3 >> 26;
-        $g3 &= 0x3ffffff;
-
+        $g0 = $h0  + 5; $c = $g0 >> 26; $g0 &= 0x3ffffff;
+        $g1 = $h1 + $c; $c = $g1 >> 26; $g1 &= 0x3ffffff;
+        $g2 = $h2 + $c; $c = $g2 >> 26; $g2 &= 0x3ffffff;
+        $g3 = $h3 + $c; $c = $g3 >> 26; $g3 &= 0x3ffffff;
         $g4 = ($h4 + $c - (1 << 26)) & 0xffffffff;
 
         $mask = ($g4 >> 31) - 1;
@@ -182,30 +144,21 @@ class Native
 
         list ($s0, $s1, $s2, $s3, $s4) = $ctx->s;
 
-        $c = $h0 + $s0;
-        $h0 = $c & 0x3ffffff;
-
-        $c = $h1 + $s1 + ($c >> 26);
-        $h1 = $c & 0x3ffffff;
-
-        $c = $h2 + $s2 + ($c >> 26);
-        $h2 = $c & 0x3ffffff;
-
-        $c = $h3 + $s3 + ($c >> 26);
-        $h3 = $c & 0x3ffffff;
-
-        $c = $h4 + $s4 + ($c >> 26);
-        $h4 = $c & 0x0ffffff;
+        $c = $h0 + $s0;              $h0 = $c & 0x3ffffff;
+        $c = $h1 + $s1 + ($c >> 26); $h1 = $c & 0x3ffffff;
+        $c = $h2 + $s2 + ($c >> 26); $h2 = $c & 0x3ffffff;
+        $c = $h3 + $s3 + ($c >> 26); $h3 = $c & 0x3ffffff;
+        $c = $h4 + $s4 + ($c >> 26); $h4 = $c & 0x0ffffff;
 
         $mac = pack('v8',
-            $h0 & 0xffff,
+              $h0                       & 0xffff,
             (($h0 >> 16) | ($h1 << 10)) & 0xffff,
-            ($h1 >>  6) & 0xffff,
-            (($h1 >> 22) | ($h2 << 4)) & 0xffff,
+            ( $h1 >>  6)                & 0xffff,
+            (($h1 >> 22) | ($h2 <<  4)) & 0xffff,
             (($h2 >> 12) | ($h3 << 14)) & 0xffff,
-            ($h3 >> 2) & 0xffff,
-            (($h3 >> 18) | ($h4 << 8)) & 0xffff,
-            ($h4 >> 8) & 0xffff
+            ( $h3 >>  2)                & 0xffff,
+            (($h3 >> 18) | ($h4 <<  8)) & 0xffff,
+            ( $h4 >>  8)                & 0xffff
         );
 
         $ctx = new ContextNative();
