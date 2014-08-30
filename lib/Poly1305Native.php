@@ -19,24 +19,24 @@ class Native
         }
 
         $words = unpack('v8', $key);
-        $ctx->r = array(
+        $ctx->r = [
             ( $words[1]        | ($words[2] << 16))                     & 0x3ffffff,
             (($words[2] >> 10) | ($words[3] <<  6) | ($words[4] << 22)) & 0x3ffff03,
             (($words[4] >>  4) | ($words[5] << 12))                     & 0x3ffc0ff,
             (($words[5] >> 14) | ($words[6] <<  2) | ($words[7] << 18)) & 0x3f03fff,
             (($words[7] >>  8) | ($words[8] <<  8))                     & 0x00fffff,
-        );
+        ];
 
         $words = unpack('@16/v8', $key);
-        $ctx->s = array(
+        $ctx->s = [
             ( $words[1]        | ($words[2] << 16))                     & 0x3ffffff,
             (($words[2] >> 10) | ($words[3] <<  6) | ($words[4] << 22)) & 0x3ffffff,
             (($words[4] >>  4) | ($words[5] << 12))                     & 0x3ffffff,
             (($words[5] >> 14) | ($words[6] <<  2) | ($words[7] << 18)) & 0x3ffffff,
             (($words[7] >>  8) | ($words[8] <<  8))                     & 0x0ffffff,
-        );
+        ];
 
-        $ctx->h = array(0, 0, 0, 0, 0);
+        $ctx->h = [0, 0, 0, 0, 0];
 
         $ctx->buffer = '';
     }
@@ -60,14 +60,14 @@ class Native
 
         $hibit <<= 24;
 
-        list ($r0, $r1, $r2, $r3, $r4) = $ctx->r;
+        list($r0, $r1, $r2, $r3, $r4) = $ctx->r;
 
         $s1 = 5 * $r1;
         $s2 = 5 * $r2;
         $s3 = 5 * $r3;
         $s4 = 5 * $r4;
 
-        list ($h0, $h1, $h2, $h3, $h4) = $ctx->h;
+        list($h0, $h1, $h2, $h3, $h4) = $ctx->h;
 
         $msgLen = strlen($message);
         $blocks = $msgLen >> 4;
@@ -97,7 +97,7 @@ class Native
             $offset += 16;
         }
 
-        $ctx->h = array($h0, $h1, $h2, $h3, $h4);
+        $ctx->h = [$h0, $h1, $h2, $h3, $h4];
 
         if ($offset < $msgLen) {
             $ctx->buffer = substr($message, $offset);
@@ -114,7 +114,7 @@ class Native
             $this->blocks($ctx, "\1" . str_repeat("\0", 15 - strlen($ctx->buffer)), 0);
         }
 
-        list ($h0, $h1, $h2, $h3, $h4) = $ctx->h;
+        list($h0, $h1, $h2, $h3, $h4) = $ctx->h;
 
                    $c = $h1 >> 26; $h1 &= 0x3ffffff;
         $h2 += $c; $c = $h2 >> 26; $h2 &= 0x3ffffff;
@@ -142,7 +142,7 @@ class Native
         $h3 = ($h3 & $mask) | $g3;
         $h4 = ($h4 & $mask) | $g4;
 
-        list ($s0, $s1, $s2, $s3, $s4) = $ctx->s;
+        list($s0, $s1, $s2, $s3, $s4) = $ctx->s;
 
         $c = $h0 + $s0;              $h0 = $c & 0x3ffffff;
         $c = $h1 + $s1 + ($c >> 26); $h1 = $c & 0x3ffffff;
