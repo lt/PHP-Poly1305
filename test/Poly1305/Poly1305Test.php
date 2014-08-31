@@ -1,35 +1,55 @@
 <?php
 
-class Poly1305Test extends PHPUnit_Framework_TestCase
+namespace Poly1305;
+
+class Poly1305Test extends \PHPUnit_Framework_TestCase
 {
-    /**
-     * @expectedException InvalidArgumentException
-     */
-    function testInvalidAuthenticator()
+    function implementationProvider()
     {
-        $poly1305 = new Poly1305();
+        $impl = [[new Native32]];
+
+        if (PHP_INT_SIZE > 4) {
+            $impl[] = [new Native64];
+        }
+
+        if (extension_loaded('gmp') && PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
+            $impl[] = [new GMP];
+        }
+
+        return $impl;
+    }
+
+    /**
+     * @dataProvider implementationProvider
+     * @expectedException \InvalidArgumentException
+     */
+    function testInvalidAuthenticator($poly1305)
+    {
         $poly1305->verify('123', '01234567890123456789012345678901', '123');
     }
 
     /**
-     * @expectedException InvalidArgumentException
+     * @dataProvider implementationProvider
+     * @expectedException \InvalidArgumentException
      */
-    function testInvalidKey()
+    function testInvalidKey($poly1305)
     {
-        $poly1305 = new Poly1305();
         $poly1305->authenticate('123', '123');
     }
 
     /**
-     * @expectedException InvalidArgumentException
+     * @dataProvider implementationProvider
+     * @expectedException \InvalidArgumentException
      */
-    function testInvalidMessage()
+    function testInvalidMessage($poly1305)
     {
-        $poly1305 = new Poly1305();
         $poly1305->authenticate('01234567890123456789012345678901', 123);
     }
 
-    function testNaCL()
+    /**
+     * @dataProvider implementationProvider
+     */
+    function testNaCL($poly1305)
     {
         /* example from nacl */
         $key = pack('C*',
@@ -64,11 +84,13 @@ class Poly1305Test extends PHPUnit_Framework_TestCase
             0x2a,0x7d,0xfb,0x4b,0x3d,0x33,0x05,0xd9
         );
 
-        $poly1305 = new Poly1305();
         $this->assertTrue($poly1305->verify($authenticator, $key, $message));
     }
 
-    function testWrap()
+    /**
+     * @dataProvider implementationProvider
+     */
+    function testWrap($poly1305)
     {
         /* generates a final value of (2^130 - 2) == 3 */
         $key = pack('C*',
@@ -88,11 +110,13 @@ class Poly1305Test extends PHPUnit_Framework_TestCase
             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
         );
 
-        $poly1305 = new Poly1305();
         $this->assertTrue($poly1305->verify($authenticator, $key, $message));
     }
 
-    function testTotal()
+    /**
+     * @dataProvider implementationProvider
+     */
+    function testTotal($poly1305)
     {
         /*
             mac of the macs of messages of length 0 to 256, where the key and messages
@@ -110,8 +134,6 @@ class Poly1305Test extends PHPUnit_Framework_TestCase
             0x64,0xaf,0xe2,0xe8,0xd6,0xad,0x7b,0xbd,
             0xd2,0x87,0xf9,0x7c,0x44,0x62,0x3d,0x39
         );
-
-        $poly1305 = new Poly1305();
 
         $message = '';
         for ($i = 0; $i < 256; $i++) {
