@@ -82,13 +82,14 @@ class GMP
         $ctx->h += $ctx->s;
 
         $out = [];
-        for ($j = 0; $j < 16; $j++) {
-            list($ctx->h, $out[$j]) = gmp_div_qr($ctx->h, 256);
+        list($max, $div, $format) = [4 => [8, 0x10000, 'v8'], 8 => [4, 0x100000000, 'V4']][PHP_INT_SIZE];
+        for ($j = 0; $j < $max; $j++) {
+            list($ctx->h, $out[$j]) = gmp_div_qr($ctx->h, $div);
         }
 
         $ctx = new Context();
 
-        return pack('C16', ...$out);
+        return pack($format, ...$out);
     }
 
     public function authenticate($key, $message)
