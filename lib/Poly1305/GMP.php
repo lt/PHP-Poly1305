@@ -16,7 +16,7 @@ class GMP
     function init(Context $ctx, $key)
     {
         if (!is_string($key) || strlen($key) !== 32) {
-            throw new \InvalidArgumentException('Key must be a 32 byte string');
+            throw new \InvalidArgumentException('Key must be a 32 bytes');
         }
 
         $ctx->r = gmp_init(bin2hex(strrev($key & "\xff\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f")), 16);
@@ -26,10 +26,10 @@ class GMP
         $ctx->type = __CLASS__;
     }
 
-    function blocks(Context $ctx, $message)
+    function update(Context $ctx, $message)
     {
-        if ($ctx->type !== __CLASS__) {
-            throw new \InvalidArgumentException('Context not initialised');
+        if (!property_exists($ctx, 'type') || $ctx->type !== __CLASS__) {
+            throw new \InvalidArgumentException('Invalid Context');
         }
 
         if (!is_string($message)) {
@@ -70,8 +70,8 @@ class GMP
 
     function finish(Context $ctx)
     {
-        if ($ctx->type !== __CLASS__) {
-            throw new \InvalidArgumentException('Context not initialised');
+        if (!property_exists($ctx, 'type') || $ctx->type !== __CLASS__) {
+            throw new \InvalidArgumentException('Invalid Context');
         }
 
         if ($ctx->buffer) {
@@ -90,22 +90,5 @@ class GMP
         $ctx = new Context();
 
         return pack($format, ...$out);
-    }
-
-    public function authenticate($key, $message)
-    {
-        $ctx = new Context();
-        $this->init($ctx, $key);
-        $this->blocks($ctx, $message);
-        return $this->finish($ctx);
-    }
-
-    public function verify($authenticator, $key, $message)
-    {
-        if (!is_string($authenticator) || strlen($authenticator) !== 16) {
-            throw new \InvalidArgumentException('Authenticator must be a 16 byte string');
-        }
-
-        return hash_equals($authenticator, $this->authenticate($key, $message));
     }
 }

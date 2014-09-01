@@ -23,18 +23,10 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
      * @dataProvider implementationProvider
      * @expectedException \InvalidArgumentException
      */
-    function testInvalidAuthenticator($poly1305)
-    {
-        $poly1305->verify('123', '01234567890123456789012345678901', '123');
-    }
-
-    /**
-     * @dataProvider implementationProvider
-     * @expectedException \InvalidArgumentException
-     */
     function testInvalidKey($poly1305)
     {
-        $poly1305->authenticate('123', '123');
+        $ctx = new Context();
+        $poly1305->init($ctx, '123');
     }
 
     /**
@@ -43,7 +35,9 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
      */
     function testInvalidMessage($poly1305)
     {
-        $poly1305->authenticate('01234567890123456789012345678901', 123);
+        $ctx = new Context();
+        $poly1305->init($ctx, '01234567890123456789012345678901');
+        $poly1305->update($ctx, null);
     }
 
     /**
@@ -79,12 +73,16 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
             0xe3,0x55,0xa5
         );
 
-        $authenticator = pack('C*',
+        $mac = pack('C*',
             0xf3,0xff,0xc7,0x70,0x3f,0x94,0x00,0xe5,
             0x2a,0x7d,0xfb,0x4b,0x3d,0x33,0x05,0xd9
         );
 
-        $this->assertTrue($poly1305->verify($authenticator, $key, $message));
+        $ctx = new Context();
+        $poly1305->init($ctx, $key);
+        $poly1305->update($ctx, $message);
+
+        $this->assertTrue($mac === $poly1305->finish($ctx));
     }
 
     /**
@@ -105,12 +103,16 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
             0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
         );
 
-        $authenticator = pack('C*',
+        $mac = pack('C*',
             0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
         );
 
-        $this->assertTrue($poly1305->verify($authenticator, $key, $message));
+        $ctx = new Context();
+        $poly1305->init($ctx, $key);
+        $poly1305->update($ctx, $message);
+
+        $this->assertTrue($mac === $poly1305->finish($ctx));
     }
 
     /**
@@ -130,19 +132,22 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
             0x00,0x00,0x00,0x00
         );
 
-        $authenticator = pack('C*',
+        $mac = pack('C*',
             0x64,0xaf,0xe2,0xe8,0xd6,0xad,0x7b,0xbd,
             0xd2,0x87,0xf9,0x7c,0x44,0x62,0x3d,0x39
         );
 
+        $ctx = new Context();
         $message = '';
         for ($i = 0; $i < 256; $i++) {
-            $message .= $poly1305->authenticate(
-                str_repeat(chr($i), 32),
-                str_repeat(chr($i), $i)
-            );
+            $poly1305->init($ctx, str_repeat(chr($i), 32));
+            $poly1305->update($ctx, str_repeat(chr($i), $i));
+            $message .= $poly1305->finish($ctx);
         }
 
-        $this->assertTrue($poly1305->verify($authenticator, $key, $message));
+        $poly1305->init($ctx, $key);
+        $poly1305->update($ctx, $message);
+
+        $this->assertTrue($mac === $poly1305->finish($ctx));
     }
 }

@@ -7,7 +7,7 @@ class Native64
     function init(Context $ctx, $key)
     {
         if (!is_string($key) || strlen($key) !== 32) {
-            throw new \InvalidArgumentException('Key must be a 32 byte string');
+            throw new \InvalidArgumentException('Key must be a 32 bytes');
         }
 
         $words = unpack('v8', $key);
@@ -33,10 +33,10 @@ class Native64
         $ctx->type = __CLASS__;
     }
 
-    function blocks(Context $ctx, $message, $hibit = 1)
+    function update(Context $ctx, $message, $hibit = 1)
     {
-        if ($ctx->type !== __CLASS__) {
-            throw new \InvalidArgumentException('Context not initialised');
+        if (!property_exists($ctx, 'type') || $ctx->type !== __CLASS__) {
+            throw new \InvalidArgumentException('Invalid Context');
         }
 
         if (!is_string($message)) {
@@ -98,12 +98,12 @@ class Native64
 
     function finish(Context $ctx)
     {
-        if ($ctx->type !== __CLASS__) {
+        if (!property_exists($ctx, 'type') || $ctx->type !== __CLASS__) {
             throw new \InvalidArgumentException('Context not initialised');
         }
 
         if ($ctx->buffer) {
-            $this->blocks($ctx, "\1" . str_repeat("\0", 15 - strlen($ctx->buffer)), 0);
+            $this->update($ctx, "\1" . str_repeat("\0", 15 - strlen($ctx->buffer)), 0);
         }
 
         list($h0, $h1, $h2, $h3, $h4) = $ctx->h;
@@ -143,12 +143,12 @@ class Native64
         $c = $h4 + $s4 + ($c >> 26); $h4 = $c & 0x0ffffff;
 
         $mac = pack('v8',
-            $h0,
+             $h0,
             (($h0 >> 16) | ($h1 << 10)),
-            ($h1 >> 6),
+             ($h1 >>  6),
             (($h1 >> 22) | ($h2 <<  4)),
             (($h2 >> 12) | ($h3 << 14)),
-            ($h3 >> 2),
+             ($h3 >>  2),
             (($h3 >> 18) | ($h4 <<  8)),
             ( $h4 >>  8)
         );
@@ -156,22 +156,5 @@ class Native64
         $ctx = new Context();
 
         return $mac;
-    }
-
-    public function authenticate($key, $message)
-    {
-        $ctx = new Context();
-        $this->init($ctx, $key);
-        $this->blocks($ctx, $message);
-        return $this->finish($ctx);
-    }
-
-    public function verify($authenticator, $key, $message)
-    {
-        if (!is_string($authenticator) || strlen($authenticator) !== 16) {
-            throw new \InvalidArgumentException('Authenticator must be a 16 byte string');
-        }
-
-        return hash_equals($authenticator, $this->authenticate($key, $message));
     }
 }
