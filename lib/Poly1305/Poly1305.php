@@ -2,8 +2,13 @@
 
 namespace Poly1305 {
     if (!extension_loaded('poly1305')) {
-        if (extension_loaded('gmp') && PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
-            class Poly1305 extends GMP {}
+        if (extension_loaded('gmp')) {
+            if (PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
+                class Poly1305 extends GMP {}
+            }
+            else {
+                class Poly1305 extends GMPLegacy {}
+            }
         }
         elseif (PHP_INT_SIZE > 4) {
             class Poly1305 extends Native64 {}
