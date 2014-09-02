@@ -1,0 +1,3 @@
+[submodule "ext/php-poly1305"]
+	path = ext/php-poly1305
+	url = https://github.com/lt/php-poly1305
