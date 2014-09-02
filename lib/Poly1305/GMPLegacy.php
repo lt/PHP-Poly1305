@@ -2,7 +2,7 @@
 
 namespace Poly1305;
 
-class GMP
+class GMPLegacy
 {
     private $p;
     private $hibit;
@@ -43,7 +43,7 @@ class GMP
             $offset = 16 - $bufferLen;
             if ($msgLen + $bufferLen >= 16) {
                 $c = gmp_init(bin2hex(strrev($ctx->buffer . substr($message, 0, $offset))), 16);
-                $ctx->h = gmp_div_r(($c + $ctx->h + $this->hibit) * $ctx->r, $this->p);
+                $ctx->h = gmp_div_r(gmp_mul(gmp_add($c, gmp_add($ctx->h, $this->hibit)), $ctx->r), $this->p);
                 $ctx->buffer = '';
             }
             else {
@@ -59,7 +59,7 @@ class GMP
 
         while ($blocks--) {
             $c = gmp_init(bin2hex(strrev(substr($message, $offset, 16))), 16);
-            $ctx->h = gmp_div_r(($c + $ctx->h + $this->hibit) * $ctx->r, $this->p);
+            $ctx->h = gmp_div_r(gmp_mul(gmp_add($c, gmp_add($ctx->h, $this->hibit)), $ctx->r), $this->p);
             $offset += 16;
         }
 
@@ -76,19 +76,30 @@ class GMP
 
         if ($ctx->buffer) {
             $c = gmp_init(bin2hex(strrev($ctx->buffer)), 16);
-            $ctx->h = gmp_div_r(($c + $ctx->h + gmp_pow('2', strlen($ctx->buffer) << 3)) * $ctx->r, $this->p);
+            $ctx->h = gmp_div_r(gmp_mul(gmp_add(gmp_add($c, $ctx->h), gmp_pow('2', strlen($ctx->buffer) << 3)), $ctx->r), $this->p);
         }
 
-        $ctx->h += $ctx->s;
+        $ctx->h = gmp_add($ctx->h, $ctx->s);
 
-        $out = [];
-        list($max, $div, $format) = [4 => [8, 0x10000, 'v8'], 8 => [4, 0x100000000, 'V4']][PHP_INT_SIZE];
-        for ($j = 0; $j < $max; $j++) {
-            list($ctx->h, $out[$j]) = gmp_div_qr($ctx->h, $div);
+        if (PHP_INT_SIZE === 8) {
+            $max = 4;
+            $div = 0x100000000;
+            $out = ['V4'];
+        }
+        else {
+            $max = 8;
+            $div = 0x10000;
+            $out = ['v8'];
+        }
+
+        for ($j = 1; $j <= $max; $j++) {
+            $tmp = gmp_div_qr($ctx->h, $div);
+            $ctx->h = $tmp[0];
+            $out[$j] = gmp_strval($tmp[1]);
         }
 
         $ctx = new Context();
 
-        return pack($format, ...$out);
+        return call_user_func_array('pack', $out);
     }
 }

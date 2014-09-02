@@ -12,8 +12,11 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
             $impl[] = [new Native64];
         }
 
-        if (extension_loaded('gmp') && PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
-            $impl[] = [new GMP];
+        if (extension_loaded('gmp')) {
+            if (PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
+                $impl[] = [new GMP];
+            }
+            $impl[] = [new GMPLegacy];
         }
 
         return $impl;
@@ -138,16 +141,15 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
         );
 
         $ctx = new Context();
-        $message = '';
+        $ctxTotal = new Context();
+
+        $poly1305->init($ctxTotal, $key);
         for ($i = 0; $i < 256; $i++) {
             $poly1305->init($ctx, str_repeat(chr($i), 32));
             $poly1305->update($ctx, str_repeat(chr($i), $i));
-            $message .= $poly1305->finish($ctx);
+            $poly1305->update($ctxTotal, $poly1305->finish($ctx));
         }
 
-        $poly1305->init($ctx, $key);
-        $poly1305->update($ctx, $message);
-
-        $this->assertTrue($mac === $poly1305->finish($ctx));
+        $this->assertTrue($mac === $poly1305->finish($ctxTotal));
     }
 }
