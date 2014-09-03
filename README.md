@@ -5,6 +5,7 @@ This library contains both a compilable extension and pure PHP implementations o
 
  - The C-based implementation requires that you can compile and install the extension.
  - The GMP based implementation requires the GMP extension and PHP 5.6 or above.
+ - The GMPLegacy based implementation requires the GMP extension and PHP 5.4 or above.
  - The Native64 implementation requires PHP 5.4 or above, and 64 bit integers.
  - The Native32 implementation requires PHP 5.4 or above
 
