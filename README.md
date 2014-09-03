@@ -45,48 +45,54 @@ $poly1305->update($ctx, $message);
 $mac = $poly1305->finish($ctx);
 ```
 
-### How to install:
+# Poly1305-AES
+
+This extension can be used to compute Poly1305-AES MACs and includes optimised AES functions specifically for this purpose.
+
+If you have the OpenSSL or MCrypt extensions installed, you can use these instead, however while OpenSSL appears to be around 10x faster than the bundled AES implementation, MCrypt is around 2x slower and is disabled by default.
+
+To use Poly1305-AES you need 3x 16 byte strings, instead of the usual 32 byte key.
 
 ```
-git clone git://github.com/lt/php-poly1305.git
-cd php-poly1305
+$k = '0123456789012345'; // AES key
+$r = '0123456789012345'; // "static" portion of Poly1305 key
+$n = '0123456789012345'; // Nonce
+```
+
+The key is now formed by calculating `aes($k, $n) . $r`, allowing `$k` and `$r` to remain unchanged as long as a unique `$n` is used for each message.
+
+There are two ways to generate `aes($k, $n)` optimised for different secnarios.
+
+If you're only going to perform one AES operation in the lifetime of your script (i.e. during a web request) then the optimised solution is to use the one-shot `kn(k, n)` method.
+
+```
+$aes = new Poly1305\AES();
+$key = $aes->kn($k, $n) . $r;
+$mac = Poly1305\auth($key, $message);
+```
+
+If you have a long running script that will perform many AES operations with incremental or random nonces, then the optimised solution is to use the separate `k()` and `n()` methods. Calling `k()` caches the processed key so that it can be used again.
+
+```
+$aes = new Poly1305\AES();
+$aes->k($k);
+
+$key = $aes->n($n) . $r;
+$mac = Poly1305\auth($key, $message);
+
+// change nonce
+
+$key = $aes->n($n) . $r;
+$mac = Poly1305\auth($key, $message);
+```
+
+### How to install the compiled extension:
+
+```
+cd ext/php-poly1305
 phpize
 ./configure
 make
 sudo make install
 ```
 Finally add `extension=poly1305.so` to your /etc/php.ini
-
-
-# Poly1305-AES
-
-This extension can be used to compute Poly1305-AES MACs. You will need a way of performing AES encryption to do this. Most people have the OpenSSL or MCrypt extensions that can do this.
-
-### OpenSSL
-
-`$k$r` is 32 byte random key, and `$n` is unique nonce for each message.
-
-```
-$k = '0123456789012345';
-$r = '0123456789012345';
-$n = '0123456789012345';
-
-$aeskn = openssl_encrypt($n, 'aes-128-ecb', $k,
-    OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING);
-
-$mac = Poly1305\auth($r . $aeskn, $message);
-```
-
-### MCrypt
-
-`$k$r` is 32 byte random key, and `$n` is unique nonce for each message.
-
-```
-$k = '0123456789012345';
-$r = '0123456789012345';
-$n = '0123456789012345';
-
-$aeskn = mcrypt_encrypt('rijndael-128', $k, $n, 'ecb');
-
-$mac = Poly1305\auth($r . $aeskn, $message);
-```
