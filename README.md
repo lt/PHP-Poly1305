@@ -17,7 +17,7 @@ For those who only want the C-based extension, it lives in it's own repository: 
 
 You can generate and verify MACs with the one-shot functions `auth` and `verify` available in the `Poly1305` namespace.
 
-Generate an mac using a 32 byte unique key
+Generate a MAC using a 32 byte unique key
 
 ```
 $mac = Poly1305\auth($key, $message);
@@ -55,12 +55,12 @@ If you have the OpenSSL or MCrypt extensions installed, you can use these instea
 To use Poly1305-AES you need 3x 16 byte strings, instead of the usual 32 byte key.
 
 ```
-$k = '0123456789012345'; // AES key
 $r = '0123456789012345'; // "static" portion of Poly1305 key
+$k = '0123456789012345'; // AES key
 $n = '0123456789012345'; // Nonce
 ```
 
-The key is now formed by calculating `aes($k, $n) . $r`, allowing `$k` and `$r` to remain unchanged as long as a unique `$n` is used for each message.
+The key is now formed by calculating `$r . aes($k, $n)`, allowing `$k` and `$r` to remain unchanged as long as a unique `$n` is used for each message.
 
 There are two ways to generate `aes($k, $n)` optimised for different secnarios.
 
@@ -68,7 +68,7 @@ If you're only going to perform one AES operation in the lifetime of your script
 
 ```
 $aes = new Poly1305\AES();
-$key = $aes->kn($k, $n) . $r;
+$key = $r . $aes->kn($k, $n);
 $mac = Poly1305\auth($key, $message);
 ```
 
@@ -78,12 +78,12 @@ If you have a long running script that will perform many AES operations with inc
 $aes = new Poly1305\AES();
 $aes->k($k);
 
-$key = $aes->n($n) . $r;
+$key = $r . $aes->n($n);
 $mac = Poly1305\auth($key, $message);
 
 // change nonce
 
-$key = $aes->n($n) . $r;
+$key = $r . $aes->n($n);
 $mac = Poly1305\auth($key, $message);
 ```
 
