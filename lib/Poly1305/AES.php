@@ -197,7 +197,7 @@ else {
         function k($k)
         {
             $s = $this->S;
-            $rk  = array_values(unpack('V4', $k));
+            $rk  = array_values(unpack('N4', $k));
     
             $t = $rk[3];
             $rk[4] = $rk[0] ^ ($s[$t >> 24 & 0xff] | ($s[$t & 0xff] << 8) | ($s[$t >> 8 & 0xff] << 16) | (($s[$t >> 16 & 0xff] ^ 0x01) << 24));
@@ -251,7 +251,7 @@ else {
             $s = $this->S;
             $rk  = $this->rk;
     
-            list($x0, $x1, $x2, $x3) = array_values(unpack('V4', $n));
+            list($x0, $x1, $x2, $x3) = array_values(unpack('N4', $n));
     
             $x0 ^= $rk[0];
             $x1 ^= $rk[1];
@@ -334,8 +334,8 @@ else {
             $t3 = $this->T3;
             $s  = $this->S;
 
-            list($rk0, $rk1, $rk2, $rk3) = array_values(unpack('V4', $k));
-            list( $x0,  $x1,  $x2,  $x3) = array_values(unpack('V4', $n));
+            list($rk0, $rk1, $rk2, $rk3) = array_values(unpack('N4', $k));
+            list( $x0,  $x1,  $x2,  $x3) = array_values(unpack('N4', $n));
 
             $x0 ^= $rk0;
             $x1 ^= $rk1;
