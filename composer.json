@@ -1,6 +1,6 @@
 {
-    "name": "lt/Poly1305",
-    "homepage": "https://github.com/lt/Poly1305",
+    "name": "lt/PHP-Poly1305",
+    "homepage": "https://github.com/lt/PHP-Poly1305",
     "description": "Pure PHP implementations of Poly1305.",
     "require": {
         "php": "~5.4"
