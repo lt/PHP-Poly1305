@@ -2,7 +2,7 @@
 
 namespace Poly1305;
 
-class GMP
+class GMP implements Base
 {
     private $p;
     private $hibit;

@@ -2,7 +2,7 @@
 
 namespace Poly1305;
 
-class GMPLegacy
+class GMPLegacy implements Base
 {
     private $p;
     private $hibit;

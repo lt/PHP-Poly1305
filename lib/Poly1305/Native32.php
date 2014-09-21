@@ -2,7 +2,7 @@
 
 namespace Poly1305;
 
-class Native32
+class Native32 implements Base
 {
     function init(Context $ctx, $key)
     {

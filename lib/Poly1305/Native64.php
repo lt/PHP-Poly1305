@@ -2,7 +2,7 @@
 
 namespace Poly1305;
 
-class Native64
+class Native64 implements Base
 {
     function init(Context $ctx, $key)
     {
