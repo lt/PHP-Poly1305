@@ -10,11 +10,8 @@ namespace Poly1305 {
                 class Poly1305 extends GMPLegacy {}
             }
         }
-        elseif (PHP_INT_SIZE > 4) {
-            class Poly1305 extends Native64 {}
-        }
         else {
-            class Poly1305 extends Native32 {}
+            class Poly1305 extends Native {}
         }
 
         function auth($key, $message)

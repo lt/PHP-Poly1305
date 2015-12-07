@@ -6,11 +6,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
 {
     function implementationProvider()
     {
-        $impl = [[new Native32]];
-
-        if (PHP_INT_SIZE > 4) {
-            $impl[] = [new Native64];
-        }
+        $impl = [[new Native]];
 
         if (extension_loaded('gmp')) {
             if (version_compare(PHP_VERSION, '5.6.1') >= 0) {
