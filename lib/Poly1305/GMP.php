@@ -19,8 +19,8 @@ class GMP implements Base
             throw new \InvalidArgumentException('Key must be a 32 bytes');
         }
 
-        $ctx->r = gmp_init(bin2hex(strrev($key & "\xff\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f")), 16);
-        $ctx->s = gmp_init(bin2hex(strrev(substr($key, 16))), 16);
+        $ctx->r = gmp_import($key & "\xff\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f", 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN);
+        $ctx->s = gmp_import(substr($key, 16), 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN);
         $ctx->h = gmp_init('0');
         $ctx->buffer = '';
         $ctx->type = __CLASS__;
@@ -42,7 +42,7 @@ class GMP implements Base
             $bufferLen = strlen($ctx->buffer);
             $offset = 16 - $bufferLen;
             if ($msgLen + $bufferLen >= 16) {
-                $c = gmp_init(bin2hex(strrev($ctx->buffer . substr($message, 0, $offset))), 16);
+                $c = gmp_import($ctx->buffer . substr($message, 0, $offset), 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN);
                 $ctx->h = gmp_div_r(($c + $ctx->h + $this->hibit) * $ctx->r, $this->p);
                 $ctx->buffer = '';
             }
@@ -58,7 +58,7 @@ class GMP implements Base
         $blocks = ($msgLen - $offset) >> 4;
 
         while ($blocks--) {
-            $c = gmp_init(bin2hex(strrev(substr($message, $offset, 16))), 16);
+            $c = gmp_import(substr($message, $offset, 16), 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN);
             $ctx->h = gmp_div_r(($c + $ctx->h + $this->hibit) * $ctx->r, $this->p);
             $offset += 16;
         }
@@ -75,7 +75,7 @@ class GMP implements Base
         }
 
         if ($ctx->buffer) {
-            $c = gmp_init(bin2hex(strrev($ctx->buffer)), 16);
+            $c = gmp_import($ctx->buffer, 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN);
             $ctx->h = gmp_div_r(($c + $ctx->h + gmp_pow('2', strlen($ctx->buffer) << 3)) * $ctx->r, $this->p);
         }
 

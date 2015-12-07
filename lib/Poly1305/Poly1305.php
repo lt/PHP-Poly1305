@@ -3,7 +3,7 @@
 namespace Poly1305 {
     if (!extension_loaded('poly1305')) {
         if (extension_loaded('gmp')) {
-            if (PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
+            if (version_compare(PHP_VERSION, '5.6.1') >= 0) {
                 class Poly1305 extends GMP {}
             }
             else {

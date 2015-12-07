@@ -13,7 +13,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
         }
 
         if (extension_loaded('gmp')) {
-            if (PHP_MAJOR_VERSION >= 5 && PHP_MINOR_VERSION >= 6) {
+            if (version_compare(PHP_VERSION, '5.6.1') >= 0) {
                 $impl[] = [new GMP];
             }
             $impl[] = [new GMPLegacy];
