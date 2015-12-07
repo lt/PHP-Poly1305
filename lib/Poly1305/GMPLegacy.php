@@ -23,13 +23,13 @@ class GMPLegacy implements Base
         $ctx->s = gmp_init(bin2hex(strrev(substr($key, 16))), 16);
         $ctx->h = gmp_init('0');
         $ctx->buffer = '';
-        $ctx->type = __CLASS__;
+        $ctx->init = true;
     }
 
     function update(Context $ctx, $message)
     {
-        if (!property_exists($ctx, 'type') || $ctx->type !== __CLASS__) {
-            throw new \InvalidArgumentException('Invalid Context');
+        if (!$ctx->init) {
+            throw new \InvalidArgumentException('Context not initialised');
         }
 
         if (!is_string($message)) {
@@ -70,8 +70,8 @@ class GMPLegacy implements Base
 
     function finish(Context $ctx)
     {
-        if (!property_exists($ctx, 'type') || $ctx->type !== __CLASS__) {
-            throw new \InvalidArgumentException('Invalid Context');
+        if (!$ctx->init) {
+            throw new \InvalidArgumentException('Context not initialised');
         }
 
         if ($ctx->buffer) {

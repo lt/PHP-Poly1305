@@ -30,13 +30,13 @@ class Native implements Base
 
         $ctx->h = [0, 0, 0, 0, 0];
         $ctx->buffer = '';
-        $ctx->type = __CLASS__;
+        $ctx->init = true;
     }
 
     function update(Context $ctx, $message, $hibit = 1)
     {
-        if (!property_exists($ctx, 'type') || $ctx->type !== __CLASS__) {
-            throw new \InvalidArgumentException('Invalid Context');
+        if (!$ctx->init) {
+            throw new \InvalidArgumentException('Context not initialised');
         }
 
         if (!is_string($message)) {
@@ -98,7 +98,7 @@ class Native implements Base
 
     function finish(Context $ctx)
     {
-        if (!property_exists($ctx, 'type') || $ctx->type !== __CLASS__) {
+        if (!$ctx->init) {
             throw new \InvalidArgumentException('Context not initialised');
         }
 
