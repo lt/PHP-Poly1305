@@ -11,25 +11,6 @@ if (extension_loaded('openssl')) {
         }
     }
 }
-/* So MCrypt is slower than the optimised solution below... (tested on OSX w/ homebrew PHP 5.6 so far)
-elseif (extension_loaded('mcrypt')) {
-    class AES
-    {
-        private $td;
-
-        function __construct()
-        {
-            $this->td = mcrypt_module_open('rijndael-128', null, 'ecb', null);
-        }
-
-        function kn($key, $nonce)
-        {
-            mcrypt_generic_init($this->td, $key, $key);
-            return mcrypt_generic($this->td, $nonce);
-        }
-    }
-}
-*/
 else {
     class AES
     {
@@ -200,7 +181,7 @@ else {
         {
             $s = $this->S;
             list(,$rk0, $rk1, $rk2, $rk3) = unpack('N4', $key);
-    
+
             $this->rk = [
                 $rk0, $rk1, $rk2, $rk3,
                 $rk0 = $rk0 ^ ($s[$rk3 >> 24 & 0xff] | ($s[$rk3 & 0xff] << 8) | ($s[$rk3 >> 8 & 0xff] << 16) | (($s[$rk3 >> 16 & 0xff] ^ 0x01) << 24)),
@@ -225,7 +206,7 @@ else {
                 $rk1 = $rk1 ^ $rk0, $rk2 = $rk2 ^ $rk1, $rk3 = $rk3 ^ $rk2
             ];
         }
-    
+
         function n($nonce)
         {
             $t0 = $this->T0;
@@ -234,9 +215,9 @@ else {
             $t3 = $this->T3;
             $s = $this->S;
             $rk  = $this->rk;
-    
+
             list(,$x0, $x1, $x2, $x3) = unpack('N4', $nonce);
-    
+
             $x0 ^= $rk[0];
             $x1 ^= $rk[1];
             $x2 ^= $rk[2];
@@ -260,7 +241,7 @@ else {
             $y1 = $t0[$x1 >> 24 & 0xff] ^ $t1[$x2 >> 16 & 0xff] ^ $t2[$x3 >> 8 & 0xff] ^ $t3[$x0 & 0xff] ^ $rk[37];
             $y2 = $t0[$x2 >> 24 & 0xff] ^ $t1[$x3 >> 16 & 0xff] ^ $t2[$x0 >> 8 & 0xff] ^ $t3[$x1 & 0xff] ^ $rk[38];
             $y3 = $t0[$x3 >> 24 & 0xff] ^ $t1[$x0 >> 16 & 0xff] ^ $t2[$x1 >> 8 & 0xff] ^ $t3[$x2 & 0xff] ^ $rk[39];
-    
+
             // r10
             return pack('N4',
                 (($s[$y0 >> 24 & 0xff] << 24) ^ ($s[$y1 >> 16 & 0xff] << 16) ^ ($s[$y2 >> 8 & 0xff] << 8) ^ $s[$y3 & 0xff]) ^ $rk[40],

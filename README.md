@@ -49,9 +49,9 @@ $mac = $poly1305->finish($ctx);
 
 This extension can be used to compute Poly1305-AES MACs and includes optimised AES functions specifically for this purpose.
 
-If you have the OpenSSL or MCrypt extensions installed, you can use these instead, however while OpenSSL appears to be around 10x faster than the bundled AES implementation, MCrypt is around 2x slower and is disabled by default.
+If you have the OpenSSL extension installed this will be used instead. MCrypt is around 2x slower than the bundled native implementation, and since the extension is also unmaintained, it is not supported here.
 
-To use Poly1305-AES you need 3x 16 byte strings, instead of the usual 32 byte key.
+To use Poly1305-AES you need three 16 byte strings, instead of the usual 32 byte key.
 
 ```
 $r = '0123456789012345'; // "static" portion of Poly1305 key
