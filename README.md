@@ -61,7 +61,7 @@ $n = '0123456789012345'; // Nonce
 
 The key is now formed by calculating `$r . aes($k, $n)`, allowing `$k` and `$r` to remain unchanged as long as a unique `$n` is used for each message.
 
-There are two ways to generate `aes($k, $n)` optimised for different secnarios.
+The native implementation has two ways to generate `aes($k, $n)` optimised for different secnarios. The OpenSSL version provides the same methods, but is not optimised.
 
 If you're only going to perform one AES operation in the lifetime of your script (i.e. during a web request) then the optimised solution is to use the one-shot `kn(k, n)` method.
 

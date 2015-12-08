@@ -5,6 +5,18 @@ namespace Poly1305;
 if (extension_loaded('openssl')) {
     class AES
     {
+        private $k;
+
+        function k($key)
+        {
+            $this->k = $key;
+        }
+
+        function n($nonce)
+        {
+            return $this->kn($this->k, $nonce);
+        }
+
         function kn($key, $nonce)
         {
             return openssl_encrypt($nonce, 'aes-128-ecb', $key, OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING);
