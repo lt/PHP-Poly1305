@@ -2,7 +2,7 @@
 
 namespace Poly1305;
 
-class GMP implements Base
+class GMP implements Streamable
 {
     private $p;
     private $hibit;

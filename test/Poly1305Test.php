@@ -22,7 +22,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
      * @dataProvider implementationProvider
      * @expectedException \InvalidArgumentException
      */
-    function testInvalidKey($poly1305)
+    function testInvalidKey(Streamable $poly1305)
     {
         $ctx = new Context();
         $poly1305->init($ctx, '123');
@@ -32,7 +32,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
      * @dataProvider implementationProvider
      * @expectedException \InvalidArgumentException
      */
-    function testInvalidMessage($poly1305)
+    function testInvalidMessage(Streamable $poly1305)
     {
         $ctx = new Context();
         $poly1305->init($ctx, '01234567890123456789012345678901');
@@ -42,7 +42,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider implementationProvider
      */
-    function testNaCL($poly1305)
+    function testNaCL(Streamable $poly1305)
     {
         /* example from nacl */
         $key = pack('C*',
@@ -87,7 +87,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider implementationProvider
      */
-    function testWrap($poly1305)
+    function testWrap(Streamable $poly1305)
     {
         /* generates a final value of (2^130 - 2) == 3 */
         $key = pack('C*',
@@ -117,7 +117,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
     /**
      * @dataProvider implementationProvider
      */
-    function testTotal($poly1305)
+    function testTotal(Streamable $poly1305)
     {
         /*
             mac of the macs of messages of length 0 to 256, where the key and messages

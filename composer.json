@@ -1,16 +1,29 @@
 {
-    "name": "lt/PHP-Poly1305",
-    "homepage": "https://github.com/lt/PHP-Poly1305",
-    "description": "Pure PHP implementations of Poly1305.",
-    "require": {
-        "php": ">5.4"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "~4.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "Poly1305\\": "lib"
-        }
+  "name": "lt/poly1305",
+  "homepage": "https://github.com/lt/PHP-Poly1305",
+  "description": "Pure PHP implementations of the Poly1305 MAC algorithm.",
+  "authors": [
+    {
+      "name": "Leigh T",
+      "homepage": "https://github.com/lt"
     }
+  ],
+  "keywords": [
+    "authentication",
+    "encryption",
+    "mac",
+    "security"
+  ],
+  "license": "MIT",
+  "require": {
+    "php": ">=5.4"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "~5.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Poly1305\\": "lib"
+    }
+  }
 }

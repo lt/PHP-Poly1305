@@ -4,19 +4,19 @@ namespace Poly1305 {
     if (!extension_loaded('poly1305')) {
         if (extension_loaded('gmp')) {
             if (version_compare(PHP_VERSION, '5.6.1') >= 0) {
-                class Poly1305 extends GMP {}
+                class Authenticator extends GMP {}
             }
             else {
-                class Poly1305 extends GMPLegacy {}
+                class Authenticator extends GMPLegacy {}
             }
         }
         else {
-            class Poly1305 extends Native {}
+            class Authenticator extends Native {}
         }
 
         function auth($key, $message)
         {
-            $p = new Poly1305();
+            $p = new Authenticator();
             $c = new Context();
             $p->init($c, $key);
             $p->update($c, $message);

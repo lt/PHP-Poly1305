@@ -2,7 +2,7 @@
 
 namespace Poly1305;
 
-class GMPLegacy implements Base
+class GMPLegacy implements Streamable
 {
     private $p;
     private $hibit;

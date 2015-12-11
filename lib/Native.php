@@ -2,7 +2,7 @@
 
 namespace Poly1305;
 
-class Native implements Base
+class Native implements Streamable
 {
     function init(Context $ctx, $key)
     {
