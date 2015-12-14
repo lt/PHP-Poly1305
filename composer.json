@@ -1,5 +1,5 @@
 {
-  "name": "lt/poly1305",
+  "name": "leigh/poly1305",
   "homepage": "https://github.com/lt/PHP-Poly1305",
   "description": "Pure PHP implementations of the Poly1305 MAC algorithm.",
   "authors": [
