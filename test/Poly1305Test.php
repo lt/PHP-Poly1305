@@ -24,8 +24,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
      */
     function testInvalidKey(Streamable $poly1305)
     {
-        $ctx = new Context();
-        $poly1305->init($ctx, '123');
+        $poly1305->init('123');
     }
 
     /**
@@ -34,8 +33,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
      */
     function testInvalidMessage(Streamable $poly1305)
     {
-        $ctx = new Context();
-        $poly1305->init($ctx, '01234567890123456789012345678901');
+        $ctx = $poly1305->init('01234567890123456789012345678901');
         $poly1305->update($ctx, null);
     }
 
@@ -77,8 +75,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
             0x2a,0x7d,0xfb,0x4b,0x3d,0x33,0x05,0xd9
         );
 
-        $ctx = new Context();
-        $poly1305->init($ctx, $key);
+        $ctx = $poly1305->init($key);
         $poly1305->update($ctx, $message);
 
         $this->assertTrue($mac === $poly1305->finish($ctx));
@@ -107,8 +104,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
             0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
         );
 
-        $ctx = new Context();
-        $poly1305->init($ctx, $key);
+        $ctx = $poly1305->init($key);
         $poly1305->update($ctx, $message);
 
         $this->assertTrue($mac === $poly1305->finish($ctx));
@@ -136,12 +132,9 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
             0xd2,0x87,0xf9,0x7c,0x44,0x62,0x3d,0x39
         );
 
-        $ctx = new Context();
-        $ctxTotal = new Context();
-
-        $poly1305->init($ctxTotal, $key);
+        $ctxTotal = $poly1305->init($key);
         for ($i = 0; $i < 256; $i++) {
-            $poly1305->init($ctx, str_repeat(chr($i), 32));
+            $ctx = $poly1305->init(str_repeat(chr($i), 32));
             $poly1305->update($ctx, str_repeat(chr($i), $i));
             $poly1305->update($ctxTotal, $poly1305->finish($ctx));
         }

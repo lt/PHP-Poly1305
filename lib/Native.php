@@ -4,11 +4,13 @@ namespace Poly1305;
 
 class Native implements Streamable
 {
-    function init(Context $ctx, $key)
+    function init($key)
     {
         if (!is_string($key) || strlen($key) !== 32) {
-            throw new \InvalidArgumentException('Key must be a 32 bytes');
+            throw new \InvalidArgumentException('Key must be a 256-bit string');
         }
+
+        $ctx = new Context();
 
         $words = unpack('v8', $key);
         $ctx->r = [
@@ -30,10 +32,13 @@ class Native implements Streamable
 
         $ctx->h = [0, 0, 0, 0, 0];
         $ctx->buffer = '';
+        $ctx->hibit = 0x1000000;
         $ctx->init = true;
+
+        return $ctx;
     }
 
-    function update(Context $ctx, $message, $hibit = 1)
+    function update(Context $ctx, $message)
     {
         if (!$ctx->init) {
             throw new \InvalidArgumentException('Context not initialised');
@@ -50,8 +55,7 @@ class Native implements Streamable
 
         $offset = 0;
 
-        $hibit <<= 24;
-
+        $hibit = $ctx->hibit;
         list($r0, $r1, $r2, $r3, $r4) = $ctx->r;
 
         $s1 = 5 * $r1;
@@ -103,7 +107,8 @@ class Native implements Streamable
         }
 
         if ($ctx->buffer) {
-            $this->update($ctx, "\1" . str_repeat("\0", 15 - strlen($ctx->buffer)), 0);
+            $ctx->hibit = 0;
+            $this->update($ctx, "\1" . str_repeat("\0", 15 - strlen($ctx->buffer)));
         }
 
         list($h0, $h1, $h2, $h3, $h4) = $ctx->h;
@@ -153,7 +158,7 @@ class Native implements Streamable
             ( $h4 >>  8)
         );
 
-        $ctx = new Context();
+        $ctx->init = false;
 
         return $mac;
     }

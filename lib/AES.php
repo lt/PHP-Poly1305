@@ -24,6 +24,10 @@ if (extension_loaded('openssl')) {
     }
 }
 else {
+    /*
+     * This is NOT a complete AES implementation.
+     * Poly1305-AES only requires a single block of AES encryption output, and that is all that is provided.
+     */
     class AES
     {
         private $rk;

@@ -13,17 +13,20 @@ class GMPLegacy implements Streamable
         $this->p = gmp_init('3fffffffffffffffffffffffffffffffb', 16);
     }
 
-    function init(Context $ctx, $key)
+    function init($key)
     {
         if (!is_string($key) || strlen($key) !== 32) {
-            throw new \InvalidArgumentException('Key must be a 32 bytes');
+            throw new \InvalidArgumentException('Key must be a 256-bit string');
         }
 
+        $ctx = new Context();
         $ctx->r = gmp_init(bin2hex(strrev($key & "\xff\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f\xfc\xff\xff\x0f")), 16);
         $ctx->s = gmp_init(bin2hex(strrev(substr($key, 16))), 16);
         $ctx->h = gmp_init('0');
         $ctx->buffer = '';
         $ctx->init = true;
+
+        return $ctx;
     }
 
     function update(Context $ctx, $message)
@@ -98,7 +101,7 @@ class GMPLegacy implements Streamable
             $out[$j] = gmp_strval($tmp[1]);
         }
 
-        $ctx = new Context();
+        $ctx->init = false;
 
         return call_user_func_array('pack', $out);
     }

@@ -9,4 +9,6 @@ class Context
     public $h;
     public $buffer;
     public $init;
+    // Native implementation only
+    public $hibit;
 }

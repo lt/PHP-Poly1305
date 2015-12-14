@@ -9,8 +9,10 @@
     }
   ],
   "keywords": [
+    "authenticator",
     "authentication",
     "encryption",
+    "aes",
     "mac",
     "security"
   ],
@@ -24,6 +26,9 @@
   "autoload": {
     "psr-4": {
       "Poly1305\\": "lib"
-    }
+    },
+    "files": [
+      "lib/functions.php"
+    ]
   }
 }
