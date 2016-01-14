@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 namespace Poly1305;
 
@@ -9,10 +9,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
         $impl = [[new Native]];
 
         if (extension_loaded('gmp')) {
-            if (version_compare(PHP_VERSION, '5.6.1') >= 0) {
-                $impl[] = [new GMP];
-            }
-            $impl[] = [new GMPLegacy];
+            $impl[] = [new GMP];
         }
 
         return $impl;
@@ -29,7 +26,7 @@ class Poly1305Test extends \PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider implementationProvider
-     * @expectedException \InvalidArgumentException
+     * @expectedException \TypeError
      */
     function testInvalidMessage(Streamable $poly1305)
     {

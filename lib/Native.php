@@ -1,12 +1,12 @@
-<?php
+<?php declare(strict_types = 1);
 
 namespace Poly1305;
 
 class Native implements Streamable
 {
-    function init($key)
+    function init(string $key): Context
     {
-        if (!is_string($key) || strlen($key) !== 32) {
+        if (strlen($key) !== 32) {
             throw new \InvalidArgumentException('Key must be a 256-bit string');
         }
 
@@ -38,14 +38,10 @@ class Native implements Streamable
         return $ctx;
     }
 
-    function update(Context $ctx, $message)
+    function update(Context $ctx, string $message)
     {
         if (!$ctx->init) {
             throw new \InvalidArgumentException('Context not initialised');
-        }
-
-        if (!is_string($message)) {
-            throw new \InvalidArgumentException('Message must be a string');
         }
 
         if ($ctx->buffer) {
@@ -100,7 +96,7 @@ class Native implements Streamable
         }
     }
 
-    function finish(Context $ctx)
+    function finish(Context $ctx): string
     {
         if (!$ctx->init) {
             throw new \InvalidArgumentException('Context not initialised');

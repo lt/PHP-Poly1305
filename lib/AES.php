@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 namespace Poly1305;
 
@@ -7,17 +7,17 @@ if (extension_loaded('openssl')) {
     {
         private $k;
 
-        function k($key)
+        function k(string $key)
         {
             $this->k = $key;
         }
 
-        function n($nonce)
+        function n(string $nonce): string
         {
             return $this->kn($this->k, $nonce);
         }
 
-        function kn($key, $nonce)
+        function kn(string $key, string $nonce): string
         {
             return openssl_encrypt($nonce, 'aes-128-ecb', $key, OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING);
         }
@@ -193,7 +193,7 @@ else {
             0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
         ];
 
-        function k($key)
+        function k(string $key)
         {
             $s = $this->S;
             list(,$rk0, $rk1, $rk2, $rk3) = unpack('N4', $key);
@@ -223,7 +223,7 @@ else {
             ];
         }
 
-        function n($nonce)
+        function n(string $nonce): string
         {
             $t0 = $this->T0;
             $t1 = $this->T1;
@@ -267,7 +267,7 @@ else {
             );
         }
 
-        function kn($key, $nonce)
+        function kn(string $key, string $nonce): string
         {
             $t0 = $this->T0;
             $t1 = $this->T1;
