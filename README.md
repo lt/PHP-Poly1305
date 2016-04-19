@@ -1,11 +1,11 @@
 Poly1305 in PHP
 ===============
 
-This library contains both a compilable extension and pure PHP implementations of the Poly1305 algorithm.
+This library contains a pure PHP implementations of the Poly1305 algorithm.
 
  - The GMP based implementation requires the GMP extension and PHP 5.6 or above.
  - The GMPLegacy based implementation requires the GMP extension and PHP 5.4 or above.
- - The Native implementation requires PHP 5.4 or above, and 64 bit integers.
+ - The Native implementation requires PHP 5.4 or above with 64 bit integers.
 
 The above implementations are listed in order of performance.
 
